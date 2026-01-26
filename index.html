@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・究極版</title>
+    <title>掃除管理システム・お助け強化版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; }
         
-        /* 共通UI */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--deep-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .auth-box { background: white; padding: 30px; border-radius: 20px; color: #333; text-align: center; width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .auth-input { width: 90%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; text-align: center; }
@@ -16,7 +15,6 @@
         .main-board-title { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); color: white; text-align: center; padding: 25px 10px; font-size: 32px; font-weight: 900; position: relative; }
         .container { background: white; max-width: 1000px; margin: 15px auto; padding: 20px; border-radius: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         
-        /* ページ制御 */
         .page { display: none; } 
         .page.active { display: block; }
         nav { display: none; justify-content: space-around; background: #263238; padding: 12px 0; position: sticky; top: 0; z-index: 100; }
@@ -25,7 +23,6 @@
         nav button.active-nav { background: var(--primary-blue); }
         .mode-switch { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 25px; font-size: 13px; z-index: 1000; cursor: pointer; }
 
-        /* 当番表UI */
         .section-title { background: #f0f7ff; color: var(--deep-blue); padding: 12px 18px; border-left: 6px solid var(--primary-blue); border-radius: 6px; font-weight: bold; margin: 25px 0 15px; }
         .member-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; }
         .spots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
@@ -38,13 +35,14 @@
         .del-btn { position: absolute; top: -8px; right: -8px; background: #ef5350; color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: none; font-size: 18px; cursor: pointer; }
         .user-chip.show-del .del-btn { display: block; }
 
-        /* 履歴・スタッフ機能 */
         .action-btn { background: #4fc3f7; color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; font-size: 20px; margin: 10px 0; border-bottom: 5px solid #0288d1; cursor: pointer; }
         .save-btn { background: #ef5350; border-bottom-color: #c62828; display: none; }
         .save-btn.ready { display: block; }
         .staff-only { display: none; }
         .is-staff .staff-only { display: block; }
         textarea { width: 100%; padding: 10px; border-radius: 10px; border: 1px solid #ddd; font-size: 16px; margin-bottom: 10px; box-sizing: border-box; }
+        
+        /* 履歴表示関連 */
         .history-month-block { margin-bottom: 20px; border: 1px solid #ddd; border-radius: 15px; overflow: hidden; }
         .history-month-title { background: #eceff1; padding: 15px; font-weight: bold; font-size: 20px; border-bottom: 1px solid #ddd; }
         .history-item-wrapper { position: relative; border-bottom: 1px solid #eee; }
@@ -63,17 +61,7 @@
             .history-item-wrapper { border-bottom: 1.5px solid #000 !important; margin-bottom: 10px; }
             .history-item { display: block !important; }
             .history-item summary { display: block !important; font-size: 11px !important; padding: 3px 0 !important; border-bottom: 1px solid #ccc; pointer-events: none; }
-            
-            /* 🌟 3列レイアウトを極小文字で実現 */
-            .history-content { 
-                display: grid !important; 
-                grid-template-columns: repeat(3, 1fr) !important; 
-                gap: 2px 10px !important;
-                font-size: 9px !important; 
-                padding: 5px 0 !important; 
-                background: none !important;
-                border: none !important;
-            }
+            .history-content { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 2px 10px !important; font-size: 9px !important; padding: 5px 0 !important; background: none !important; border: none !important; }
             .history-month-title { display: block !important; font-size: 14px !important; border-bottom: 2px solid #000 !important; margin-bottom: 5px; }
         }
     </style>
@@ -180,19 +168,35 @@ function createChip(id, fullName, isHelper = false) {
 }
 
 function handleMove(chip, zone) {
-    const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
-    const fullName = chip.dataset.full;
-    if (!isStaff) {
-        if (zone.id === 'memberPool' || chip.parentElement.id === 'memberPool') {
-            if (zone.id === 'memberPool' && chip.parentElement.id === 'memberPool') return;
-        } else { return; }
+    const isTargetInHelper = zone.closest('#helperList') !== null;
+    
+    // 🌟 お助けチップ（複製済み）の場合のルール
+    if (chip.dataset.isHelper === "true") {
+        // お助けエリアの中での引っ越しならOK！
+        if (isTargetInHelper) {
+            zone.appendChild(chip);
+        } else {
+            // お助けエリア外（基本エリアや待機）へは戻せない！
+            return;
+        }
+    } else {
+        // 🌟 通常チップ（基本担当・待機リスト）の場合のルール
+        const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
+        const fullName = chip.dataset.full;
+
+        // NG設定等のチェック
+        if (fullName.includes('!') && spotName && spotName.includes(fullName.split('!')[1])) { alert("そこはNGだよ！"); return; }
+        if (spotName.includes("女子トイレ") && fullName.includes('♢')) { alert("女性のみ！"); return; }
+        if (spotName.includes("男子トイレ") && fullName.includes('♦')) { alert("男性のみ！"); return; }
+
+        if (isTargetInHelper) {
+            // お助けエリアへの移動ならコピー作成
+            zone.appendChild(createChip("h-" + Date.now(), fullName, true));
+        } else {
+            // それ以外（基本エリア間や待機への戻し）はそのまま移動
+            zone.appendChild(chip);
+        }
     }
-    if (fullName.includes('!') && spotName && spotName.includes(fullName.split('!')[1])) { alert("そこはNGだよ！"); return; }
-    if (spotName.includes("女子トイレ") && fullName.includes('♢')) { alert("女性のみ！"); return; }
-    if (spotName.includes("男子トイレ") && fullName.includes('♦')) { alert("男性のみ！"); return; }
-    if (zone.closest('#helperList') && chip.dataset.isHelper !== "true") {
-        zone.appendChild(createChip("h-" + Date.now(), fullName, true));
-    } else { zone.appendChild(chip); }
     checkStatus();
 }
 
@@ -299,10 +303,9 @@ function deleteLog(idx) {
     renderHistory();
 }
 
-// 🖨 印刷用：全部開いてから印刷
 function handlePrint() {
     document.querySelectorAll('details').forEach(d => d.open = true);
-    setTimeout(() => { window.print(); }, 100);
+    setTimeout(() => { window.print(); }, 200);
 }
 
 function showPage(pageId) {
