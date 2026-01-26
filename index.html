@@ -108,14 +108,22 @@
 <script>
 let isStaff = false;
 let draggedElement = null;
-
-// ★初期値は8277！
 const INITIAL_PW = "8277";
+
+// 🚀 起動時にログイン状態をチェック
+window.onload = function() {
+    if (localStorage.getItem('v36_is_logged_in') === 'true') {
+        document.getElementById('auth-overlay').style.display = 'none';
+        document.getElementById('main-content').style.display = 'block';
+        initBoard();
+    }
+};
 
 function checkEntry() {
     const input = document.getElementById('entry-pw').value;
     const correct = localStorage.getItem('v36_entry_pw') || INITIAL_PW;
     if (input === correct) {
+        localStorage.setItem('v36_is_logged_in', 'true'); // ログイン状態を保存
         document.getElementById('auth-overlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         initBoard();
@@ -277,6 +285,7 @@ function saveSettings() {
     localStorage.setItem('v36_m', document.getElementById('memberInput').value);
     localStorage.setItem('v36_s', document.getElementById('spotInput').value);
     localStorage.setItem('v36_h', document.getElementById('helperInput').value);
+    localStorage.setItem('v36_is_logged_in', 'true'); // ログイン維持
     alert("設定を保存しました！✨");
     initBoard(); 
     showPage('mainPage');
