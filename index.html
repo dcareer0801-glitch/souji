@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・履歴印刷特化版</title>
+    <title>掃除管理システム・完成版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; }
         
-        /* 基本レイアウト */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--deep-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .auth-box { background: white; padding: 30px; border-radius: 20px; color: #333; text-align: center; width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .auth-input { width: 90%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; text-align: center; }
@@ -26,71 +25,59 @@
         .page.active { display: block; }
         .section-title { background: #f0f7ff; color: var(--deep-blue); padding: 12px 18px; border-left: 6px solid var(--primary-blue); border-radius: 6px; font-weight: bold; margin: 25px 0 10px; }
         
+        /* スタッフ限定要素の非表示 */
+        .staff-only { display: none; }
+        .is-staff .staff-only { display: block; }
+
         /* エリア・チップ */
         .member-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; }
         .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; border-radius:20px; padding:15px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; }
-        .drag-over { background-color: #e3f2fd !important; border-color: var(--primary-blue) !important; }
         .spots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
         .spot-row { display: flex; align-items: center; padding: 15px; border: 1px solid #e1e8ed; border-radius: 18px; background: #fff; }
         .spot-row.done { background-color: #e8f5e9; border-color: #a5d6a7; }
         input[type="checkbox"] { width: 35px; height: 35px; margin-right: 15px; flex-shrink: 0; }
         .spot-info { width: 110px; font-weight: bold; color: var(--deep-blue); font-size: 18px; }
         .drop-zone { flex-grow: 1; min-height: 60px; display: flex; flex-wrap: wrap; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 10px; border: 1px solid #eee; }
-        .user-chip { position: relative; padding: 14px 24px; background: white; border: 1.5px solid #b3e5fc; border-radius: 30px; font-weight: bold; font-size: 20px; color: #0277bd; touch-action: none; white-space: nowrap; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .user-chip { position: relative; padding: 14px 24px; background: white; border: 1.5px solid #b3e5fc; border-radius: 30px; font-weight: bold; font-size: 20px; color: #0277bd; touch-action: none; white-space: nowrap; }
         .user-chip.dragging { opacity: 0.6; transform: scale(1.1); z-index: 1000; }
         .del-btn { position: absolute; top: -8px; right: -8px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: none; }
         .user-chip.show-del .del-btn { display: block; }
 
-        /* 履歴UI (画面表示用) */
-        .history-month-block { margin-bottom: 30px; }
-        .history-month-title { font-size: 22px; font-weight: bold; color: var(--deep-blue); border-bottom: 2px solid var(--primary-blue); margin-bottom: 15px; }
+        /* 履歴UI */
         .history-item-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; border: 1px solid #eee; border-radius: 12px; padding: 5px 15px; background: #fff; }
         .history-item { flex-grow: 1; }
-        .history-item summary { list-style: none; font-weight: bold; padding: 8px 0; position: relative; cursor: pointer; }
+        .history-item summary { list-style: none; font-weight: bold; padding: 8px 0; cursor: pointer; position: relative; }
         .history-item summary::after { content: '＋'; position: absolute; right: 0; color: #999; }
         .history-item[open] summary::after { content: '－'; }
-        .history-content { padding: 10px; font-size: 14px; background: #f9f9f9; border-radius: 8px; margin-bottom: 10px; }
-        .history-line { padding: 2px 0; border-bottom: 1px solid #eee; }
+        .history-content { padding: 10px; font-size: 14px; background: #f9f9f9; border-radius: 8px; }
         .log-del-btn { background: #eee; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
 
-        /* ボタン */
         .action-btn { background: #4fc3f7; color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; font-size: 20px; margin: 10px 0; border-bottom: 5px solid #0288d1; cursor: pointer; }
         .btn-group { display: flex; gap: 10px; margin: 10px 0; }
-        .btn-group .action-btn { flex: 1; margin: 0; }
         .save-btn { background: var(--accent-red); border-bottom-color: #c62828; display: none; }
         .save-btn.ready { display: block; }
         textarea { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
 
-        /* 🖨 印刷専用スタイル (ここが重要！) */
+        /* 🖨 印刷専用スタイル */
         @media print {
-            /* 全体：履歴リスト以外を全て隠す */
             body { background: white; margin: 0; padding: 0; }
-            #main-content > *:not(.container), 
-            nav, .mode-switch, #auth-overlay, .main-board-title,
-            .action-btn, .btn-group, .log-del-btn, .section-title,
-            #saveBtn { display: none !important; }
-
+            #main-content > *:not(.container), nav, .mode-switch, #auth-overlay, .main-board-title, .action-btn, .btn-group, .log-del-btn, .section-title, #saveBtn { display: none !important; }
             .container { box-shadow: none; border: none; margin: 0; padding: 0; width: 100%; max-width: none; }
             .page { display: none !important; }
-            #historyPage { display: block !important; padding: 0; }
-            #historyPage h2 { display: none; } /* 「履歴」の文字も不要なら消す */
-
-            /* 履歴の中身を究極に省スペース化 */
-            .history-month-block { margin-bottom: 20px; page-break-inside: avoid; }
-            .history-month-title { font-size: 16px; border-bottom: 1px solid #000; margin-bottom: 10px; padding: 0; }
-            .history-item-wrapper { border: none; margin: 0; padding: 0; display: block; border-bottom: 1px dashed #ccc; margin-bottom: 10px; }
-            .history-item summary { font-size: 12px; padding: 2px 0; border: none; }
-            .history-item summary::after { display: none; } /* ＋マークを消す */
-            .history-item[open] { display: block; }
-            
+            #historyPage { display: block !important; }
+            #historyPage h2 { display: none; }
+            .history-month-block { page-break-inside: avoid; margin-bottom: 10px; }
+            .history-month-title { font-size: 14px; border-bottom: 1px solid #000; font-weight: bold; }
+            .history-item-wrapper { border: none; padding: 0; margin-bottom: 5px; border-bottom: 1px solid #eee; display: block; }
+            .history-item summary { font-size: 11px; padding: 0; }
+            .history-item summary::after { display: none; }
             .history-content { 
-                background: none; padding: 0; margin: 0; 
-                display: block !important; /* 印刷時は強制的に全表示 */
-                columns: 2; /* 2列に分けてさらに省スペース化 */
-                font-size: 10px; 
+                display: inline !important; background: none; padding: 0; font-size: 10px; 
             }
-            .history-line { border: none; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .history-line b { font-size: 10px; color: #000; }
+            /* 1日の内容を横並びにする */
+            .history-line { display: inline; margin-right: 10px; }
+            .history-line::after { content: " / "; color: #ccc; }
+            .history-line:last-child::after { content: ""; }
         }
     </style>
 </head>
@@ -121,16 +108,21 @@
                 <div id="shufflePool" class="shuffle-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
                 <div class="btn-group">
                     <button class="action-btn" onclick="runShuffle()">🎲 被らないようにシャッフル！</button>
-                    <button class="action-btn reset-btn" onclick="resetToShufflePool()">↩️ 全員戻す</button>
+                    <button class="action-btn" style="background:#90a4ae; border-bottom-color:#546e7a;" onclick="resetToShufflePool()">↩️ 全員戻す</button>
                 </div>
                 <div class="section-title">👥 待機・欠席メンバー</div>
                 <div id="memberPool" class="member-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
             </div>
+
             <div class="section-title">📍 今日の掃除エリア</div>
             <div id="spotsList" class="spots-grid"></div>
+
             <div class="section-title" style="border-color:#ffd54f;">🏃 お助けエリア</div>
             <div id="helperList" class="spots-grid"></div>
-            <button id="saveBtn" class="action-btn save-btn" onclick="manualSave()">✅ 今日の記録を保存</button>
+
+            <div class="staff-only">
+                <button id="saveBtn" class="action-btn save-btn" onclick="manualSave()">✅ 今日の記録を保存</button>
+            </div>
         </div>
 
         <div id="historyPage" class="page">
@@ -148,7 +140,7 @@
             <p>利用者リスト</p><textarea id="memberInput" style="height:100px;"></textarea>
             <p>基本エリア</p><textarea id="spotInput" style="height:60px;"></textarea>
             <p>お助けエリア</p><textarea id="helperInput" style="height:60px;"></textarea>
-            <button class="action-btn" onclick="saveSettings()">設定内容を保存して更新</button>
+            <button class="action-btn" onclick="saveSettings()">設定を保存して更新</button>
         </div>
     </div>
 </div>
@@ -172,6 +164,7 @@ function initBoard() {
     const s = localStorage.getItem('v37_s') || "女子トイレ\n男子トイレ\nフロア";
     const h = localStorage.getItem('v37_h') || "窓拭き";
     
+    // 設定値をセット
     document.getElementById('memberInput').value = m;
     document.getElementById('spotInput').value = s;
     document.getElementById('helperInput').value = h;
@@ -199,9 +192,9 @@ function createChip(id, fullName, isHelper = false) {
     chip.className = "user-chip"; chip.id = id; chip.draggable = true;
     chip.innerText = fullName.split(/[!♢♦]/)[0];
     chip.dataset.full = fullName; chip.dataset.isHelper = isHelper;
-    chip.ondragstart = (e) => { draggedElement = chip; chip.classList.add('dragging'); };
+    chip.ondragstart = (e) => { if(!isStaff) return; draggedElement = chip; chip.classList.add('dragging'); };
     chip.ondragend = () => { chip.classList.remove('dragging'); };
-    chip.addEventListener('touchstart', (e) => { draggedElement = chip; chip.classList.add('dragging'); }, {passive: true});
+    chip.addEventListener('touchstart', (e) => { if(!isStaff) return; draggedElement = chip; chip.classList.add('dragging'); }, {passive: true});
     chip.addEventListener('touchend', (e) => {
         chip.classList.remove('dragging');
         const t = e.changedTouches[0];
@@ -209,7 +202,13 @@ function createChip(id, fullName, isHelper = false) {
         if (zone) handleMove(chip, zone);
         draggedElement = null;
     });
-    chip.onclick = (e) => { e.stopPropagation(); if (chip.parentElement.closest('.spot-row')) { clearAllDels(); chip.classList.add('show-del'); } };
+    chip.addEventListener('touchmove', (e) => {
+        const t = e.touches[0];
+        const zone = document.elementFromPoint(t.clientX, t.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
+        document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(z => z.style.borderColor = "");
+        if (zone) zone.style.borderColor = "var(--primary-blue)";
+    }, {passive: true});
+    chip.onclick = (e) => { if(!isStaff) return; e.stopPropagation(); if (chip.parentElement.closest('.spot-row')) { clearAllDels(); chip.classList.add('show-del'); } };
     const del = document.createElement('button');
     del.className = "del-btn"; del.innerText = "×";
     del.onclick = (e) => { e.stopPropagation(); if (chip.dataset.isHelper === "true") chip.remove(); else document.getElementById('shufflePool').appendChild(chip); checkStatus(); };
@@ -217,11 +216,11 @@ function createChip(id, fullName, isHelper = false) {
     return chip;
 }
 
-function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
-function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); if (draggedElement) handleMove(draggedElement, e.currentTarget); }
+function handleDragOver(e) { e.preventDefault(); }
+function handleDrop(e) { e.preventDefault(); if (draggedElement) handleMove(draggedElement, e.currentTarget); }
 
 function handleMove(chip, zone) {
+    if (!isStaff) return;
     const isTargetInHelper = zone.closest('#helperList') !== null;
     const fullName = chip.dataset.full;
     if (chip.dataset.isHelper === "true") { if (isTargetInHelper) zone.appendChild(chip); } 
@@ -236,6 +235,7 @@ function handleMove(chip, zone) {
 }
 
 function runShuffle() {
+    if(!isStaff) return;
     document.querySelectorAll('#spotsList .spot-row').forEach(row => {
         const spotName = row.querySelector('.spot-info').innerText;
         row.querySelectorAll('.user-chip').forEach(chip => { lastAssignments[chip.dataset.full] = spotName; });
@@ -243,7 +243,6 @@ function runShuffle() {
     resetToShufflePool();
     const spotsZones = Array.from(document.querySelectorAll('#spotsList .drop-zone'));
     const chips = Array.from(document.getElementById('shufflePool').children);
-    if (chips.length === 0) return;
     chips.sort(() => Math.random() - 0.5);
     chips.forEach(chip => {
         const fullName = chip.dataset.full;
@@ -304,7 +303,7 @@ function renderHistory() {
         const monthLogs = logs.filter(l => l.month === m);
         return `<div class="history-month-block"><div class="history-month-title">${m}</div>${monthLogs.map((l, idx) => {
             const realIdx = logs.indexOf(l);
-            return `<div class="history-item-wrapper"><details class="history-item"><summary>📅 ${l.date}</summary><div class="history-content">${l.details.map(d => `<div class="history-line">${d}</div>`).join('')}</div></details><button class="log-del-btn" onclick="deleteLog(${realIdx})">🗑</button></div>`;
+            return `<div class="history-item-wrapper"><details class="history-item"><summary>📅 ${l.date}</summary><div class="history-content">${l.details.map(d => `<span class="history-line">${d}</span>`).join('')}</div></details><button class="log-del-btn" onclick="deleteLog(${realIdx})">🗑</button></div>`;
         }).join('')}</div>`;
     }).join('');
 }
@@ -312,9 +311,7 @@ function renderHistory() {
 function deleteLog(idx) { if (confirm("削除しますか？")) { let logs = JSON.parse(localStorage.getItem('v37_logs') || "[]"); logs.splice(idx, 1); localStorage.setItem('v37_logs', JSON.stringify(logs)); renderHistory(); } }
 
 function handlePrint() { 
-    // 印刷時のみ全てのdetailsを強制的に開く
-    const details = document.querySelectorAll('details');
-    details.forEach(d => d.open = true);
+    document.querySelectorAll('details').forEach(d => d.open = true);
     setTimeout(() => { window.print(); }, 300); 
 }
 
