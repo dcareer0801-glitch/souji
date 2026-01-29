@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・完成版</title>
+    <title>掃除管理システム・利用者参加版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; }
@@ -25,32 +25,22 @@
         .page.active { display: block; }
         .section-title { background: #f0f7ff; color: var(--deep-blue); padding: 12px 18px; border-left: 6px solid var(--primary-blue); border-radius: 6px; font-weight: bold; margin: 25px 0 10px; }
         
-        /* スタッフ限定要素の非表示 */
         .staff-only { display: none; }
         .is-staff .staff-only { display: block; }
 
-        /* エリア・チップ */
-        .member-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; }
-        .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; border-radius:20px; padding:15px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; }
+        .member-zone, .shuffle-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; }
+        .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; }
         .spots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
         .spot-row { display: flex; align-items: center; padding: 15px; border: 1px solid #e1e8ed; border-radius: 18px; background: #fff; }
         .spot-row.done { background-color: #e8f5e9; border-color: #a5d6a7; }
         input[type="checkbox"] { width: 35px; height: 35px; margin-right: 15px; flex-shrink: 0; }
         .spot-info { width: 110px; font-weight: bold; color: var(--deep-blue); font-size: 18px; }
         .drop-zone { flex-grow: 1; min-height: 60px; display: flex; flex-wrap: wrap; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 10px; border: 1px solid #eee; }
-        .user-chip { position: relative; padding: 14px 24px; background: white; border: 1.5px solid #b3e5fc; border-radius: 30px; font-weight: bold; font-size: 20px; color: #0277bd; touch-action: none; white-space: nowrap; }
+
+        .user-chip { position: relative; padding: 14px 24px; background: white; border: 1.5px solid #b3e5fc; border-radius: 30px; font-weight: bold; font-size: 20px; color: #0277bd; touch-action: none; white-space: nowrap; cursor: grab; }
         .user-chip.dragging { opacity: 0.6; transform: scale(1.1); z-index: 1000; }
         .del-btn { position: absolute; top: -8px; right: -8px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: none; }
         .user-chip.show-del .del-btn { display: block; }
-
-        /* 履歴UI */
-        .history-item-wrapper { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; border: 1px solid #eee; border-radius: 12px; padding: 5px 15px; background: #fff; }
-        .history-item { flex-grow: 1; }
-        .history-item summary { list-style: none; font-weight: bold; padding: 8px 0; cursor: pointer; position: relative; }
-        .history-item summary::after { content: '＋'; position: absolute; right: 0; color: #999; }
-        .history-item[open] summary::after { content: '－'; }
-        .history-content { padding: 10px; font-size: 14px; background: #f9f9f9; border-radius: 8px; }
-        .log-del-btn { background: #eee; border: none; border-radius: 5px; padding: 5px 10px; cursor: pointer; }
 
         .action-btn { background: #4fc3f7; color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; font-size: 20px; margin: 10px 0; border-bottom: 5px solid #0288d1; cursor: pointer; }
         .btn-group { display: flex; gap: 10px; margin: 10px 0; }
@@ -58,7 +48,6 @@
         .save-btn.ready { display: block; }
         textarea { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
 
-        /* 🖨 印刷専用スタイル */
         @media print {
             body { background: white; margin: 0; padding: 0; }
             #main-content > *:not(.container), nav, .mode-switch, #auth-overlay, .main-board-title, .action-btn, .btn-group, .log-del-btn, .section-title, #saveBtn { display: none !important; }
@@ -71,10 +60,7 @@
             .history-item-wrapper { border: none; padding: 0; margin-bottom: 5px; border-bottom: 1px solid #eee; display: block; }
             .history-item summary { font-size: 11px; padding: 0; }
             .history-item summary::after { display: none; }
-            .history-content { 
-                display: inline !important; background: none; padding: 0; font-size: 10px; 
-            }
-            /* 1日の内容を横並びにする */
+            .history-content { display: inline !important; background: none; padding: 0; font-size: 10px; }
             .history-line { display: inline; margin-right: 10px; }
             .history-line::after { content: " / "; color: #ccc; }
             .history-line:last-child::after { content: ""; }
@@ -164,7 +150,6 @@ function initBoard() {
     const s = localStorage.getItem('v37_s') || "女子トイレ\n男子トイレ\nフロア";
     const h = localStorage.getItem('v37_h') || "窓拭き";
     
-    // 設定値をセット
     document.getElementById('memberInput').value = m;
     document.getElementById('spotInput').value = s;
     document.getElementById('helperInput').value = h;
@@ -192,9 +177,11 @@ function createChip(id, fullName, isHelper = false) {
     chip.className = "user-chip"; chip.id = id; chip.draggable = true;
     chip.innerText = fullName.split(/[!♢♦]/)[0];
     chip.dataset.full = fullName; chip.dataset.isHelper = isHelper;
-    chip.ondragstart = (e) => { if(!isStaff) return; draggedElement = chip; chip.classList.add('dragging'); };
+
+    chip.ondragstart = (e) => { draggedElement = chip; chip.classList.add('dragging'); };
     chip.ondragend = () => { chip.classList.remove('dragging'); };
-    chip.addEventListener('touchstart', (e) => { if(!isStaff) return; draggedElement = chip; chip.classList.add('dragging'); }, {passive: true});
+
+    chip.addEventListener('touchstart', (e) => { draggedElement = chip; chip.classList.add('dragging'); }, {passive: true});
     chip.addEventListener('touchend', (e) => {
         chip.classList.remove('dragging');
         const t = e.changedTouches[0];
@@ -202,16 +189,17 @@ function createChip(id, fullName, isHelper = false) {
         if (zone) handleMove(chip, zone);
         draggedElement = null;
     });
-    chip.addEventListener('touchmove', (e) => {
-        const t = e.touches[0];
-        const zone = document.elementFromPoint(t.clientX, t.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
-        document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(z => z.style.borderColor = "");
-        if (zone) zone.style.borderColor = "var(--primary-blue)";
-    }, {passive: true});
-    chip.onclick = (e) => { if(!isStaff) return; e.stopPropagation(); if (chip.parentElement.closest('.spot-row')) { clearAllDels(); chip.classList.add('show-del'); } };
+
+    chip.onclick = (e) => { e.stopPropagation(); if (chip.parentElement.closest('.spot-row')) { clearAllDels(); chip.classList.add('show-del'); } };
+
     const del = document.createElement('button');
     del.className = "del-btn"; del.innerText = "×";
-    del.onclick = (e) => { e.stopPropagation(); if (chip.dataset.isHelper === "true") chip.remove(); else document.getElementById('shufflePool').appendChild(chip); checkStatus(); };
+    del.onclick = (e) => { 
+        e.stopPropagation(); 
+        if (chip.dataset.isHelper === "true") chip.remove(); 
+        else document.getElementById('shufflePool').appendChild(chip); 
+        checkStatus(); 
+    };
     chip.appendChild(del);
     return chip;
 }
@@ -220,16 +208,31 @@ function handleDragOver(e) { e.preventDefault(); }
 function handleDrop(e) { e.preventDefault(); if (draggedElement) handleMove(draggedElement, e.currentTarget); }
 
 function handleMove(chip, zone) {
-    if (!isStaff) return;
-    const isTargetInHelper = zone.closest('#helperList') !== null;
+    const fromHelper = chip.closest('#helperList') !== null;
+    const toHelper = zone.closest('#helperList') !== null;
+    const toMainSpots = zone.closest('#spotsList') !== null;
+    const toStaffZones = zone.closest('.member-zone, .shuffle-zone') !== null;
+
+    // スタッフモード以外での制限
+    if (!isStaff) {
+        // お助けエリアから掃除エリアへの移動は禁止
+        if (fromHelper && toMainSpots) { alert("お助けエリアからは戻せません。"); return; }
+        // スタッフ用エリア（シャッフル枠など）への移動も禁止
+        if (toStaffZones) { alert("そこには移動できません。"); return; }
+    }
+
     const fullName = chip.dataset.full;
-    if (chip.dataset.isHelper === "true") { if (isTargetInHelper) zone.appendChild(chip); } 
-    else {
+    if (chip.dataset.isHelper === "true") { 
+        if (toHelper) zone.appendChild(chip); 
+        else if (!isStaff) { alert("お助け用チップはここには置けません。"); return; }
+    } else {
         const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
         if (fullName.includes('!') && spotName.includes(fullName.split('!')[1])) { alert("NG場所です"); return; }
         if (spotName.includes("女子トイレ") && fullName.includes('♢')) { alert("女性のみ"); return; }
         if (spotName.includes("男子トイレ") && fullName.includes('♦')) { alert("男性のみ"); return; }
-        if (isTargetInHelper) zone.appendChild(createChip("h-" + Date.now(), fullName, true)); else zone.appendChild(chip);
+        
+        if (toHelper) zone.appendChild(createChip("h-" + Date.now(), fullName, true)); 
+        else zone.appendChild(chip);
     }
     checkStatus();
 }
