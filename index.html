@@ -8,13 +8,11 @@
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; --hover-blue: #e1f5fe; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; touch-action: manipulation; }
         
-        /* 認証とタイトル */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--deep-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .auth-box { background: white; padding: 30px; border-radius: 20px; color: #333; text-align: center; width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .auth-input { width: 90%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; text-align: center; }
         .main-board-title { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); color: white; text-align: center; padding: 25px 10px; font-size: 32px; font-weight: 900; }
         
-        /* コンテナとページ */
         .container { background: white; max-width: 1000px; margin: 15px auto; padding: 20px; border-radius: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         nav { display: none; justify-content: space-around; background: #263238; padding: 12px 0; position: sticky; top: 0; z-index: 100; }
         nav.staff-visible { display: flex; }
@@ -23,27 +21,23 @@
         .mode-switch { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 25px; font-size: 13px; z-index: 1000; cursor: pointer; }
         .page { display: none; } .page.active { display: block; }
 
-        /* エリア設定 */
         .section-title { background: #f0f7ff; color: var(--deep-blue); padding: 12px 18px; border-left: 6px solid var(--primary-blue); border-radius: 6px; font-weight: bold; margin: 25px 0 10px; }
         .member-zone, .shuffle-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; }
         .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; }
         .spots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 15px; }
-        .spot-row { display: flex; align-items: center; padding: 15px; border: 1px solid #e1e8ed; border-radius: 18px; background: #fff; transition: background 0.3s; }
+        .spot-row { display: flex; align-items: center; padding: 15px; border: 1px solid #e1e8ed; border-radius: 18px; background: #fff; transition: 0.3s; }
         .spot-row.done { background-color: #e8f5e9; border-color: #a5d6a7; }
         input[type="checkbox"] { width: 35px; height: 35px; margin-right: 15px; flex-shrink: 0; }
         .spot-info { width: 110px; font-weight: bold; color: var(--deep-blue); font-size: 18px; }
         
-        /* ドロップゾーン（ドラッグ中に光る） */
         .drop-zone { flex-grow: 1; min-height: 60px; display: flex; flex-wrap: wrap; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 10px; border: 2px solid transparent; transition: 0.2s; }
         .drop-zone.drag-over { background: var(--hover-blue); border-color: var(--primary-blue); transform: scale(1.02); }
 
-        /* チップ */
         .user-chip { position: relative; padding: 14px 24px; background: white; border: 1.5px solid #b3e5fc; border-radius: 30px; font-weight: bold; font-size: 20px; color: #0277bd; touch-action: none; white-space: nowrap; cursor: grab; user-select: none; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
         .user-chip.dragging { opacity: 0.3; transform: scale(1.1); z-index: 1000; }
         .del-btn { position: absolute; top: -8px; right: -8px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: none; }
         .user-chip.show-del .del-btn { display: block; }
 
-        /* ボタン */
         .action-btn { background: #4fc3f7; color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; font-size: 20px; margin: 10px 0; border-bottom: 5px solid #0288d1; cursor: pointer; }
         .save-btn { background: var(--accent-red); border-bottom-color: #c62828; display: none; margin-top: 30px; }
         .save-btn.ready { display: block; }
@@ -100,7 +94,7 @@
             <h2>⚙️ 設定</h2>
             <p>スタッフPW: <input type="password" id="staff-pw-input" class="auth-input" style="width:100px; padding:5px;"></p>
             <p>入室合言葉: <input type="password" id="entry-pw-input" class="auth-input" style="width:100px; padding:5px;"></p>
-            <p>利用者(名前!NG場所 ♢♦):</p><textarea id="memberInput" style="height:100px;"></textarea>
+            <p>利用者(名前!NG場所 ♢男性 ♦女性):</p><textarea id="memberInput" style="height:100px;"></textarea>
             <p>基本エリア:</p><textarea id="spotInput" style="height:60px;"></textarea>
             <p>お助けエリア:</p><textarea id="helperInput" style="height:60px;"></textarea>
             <button class="action-btn" onclick="saveSettings()">設定を保存して更新</button>
@@ -111,7 +105,7 @@
 <script>
 let isStaff = false;
 let draggedElement = null;
-let dragGhost = null; // iPad用ゴースト
+let dragGhost = null;
 const INITIAL_PW = "8277";
 
 window.onload = function() {
@@ -156,16 +150,11 @@ function createChip(id, fullName, isHelper = false) {
     chip.ondragstart = (e) => { draggedElement = chip; chip.classList.add('dragging'); };
     chip.ondragend = () => chip.classList.remove('dragging');
 
-    // iPad用：指についてくる処理
     chip.addEventListener('touchstart', (e) => {
         draggedElement = chip;
         chip.classList.add('dragging');
-        // ゴースト作成
         dragGhost = chip.cloneNode(true);
-        dragGhost.style.position = 'fixed';
-        dragGhost.style.opacity = '0.8';
-        dragGhost.style.zIndex = '10000';
-        dragGhost.style.pointerEvents = 'none';
+        dragGhost.style.position = 'fixed'; dragGhost.style.opacity = '0.8'; dragGhost.style.zIndex = '10000'; dragGhost.style.pointerEvents = 'none';
         document.body.appendChild(dragGhost);
         updateGhostPos(e.touches[0]);
     }, {passive: true});
@@ -173,7 +162,6 @@ function createChip(id, fullName, isHelper = false) {
     chip.addEventListener('touchmove', (e) => {
         if (!draggedElement) return;
         updateGhostPos(e.touches[0]);
-        // 重なっているゾーンを光らせる
         const touch = e.touches[0];
         document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(z => z.classList.remove('drag-over'));
         const zone = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
@@ -199,20 +187,10 @@ function createChip(id, fullName, isHelper = false) {
     return chip;
 }
 
-function updateGhostPos(touch) {
-    if (dragGhost) {
-        dragGhost.style.left = (touch.clientX - 50) + 'px';
-        dragGhost.style.top = (touch.clientY - 25) + 'px';
-    }
-}
-
+function updateGhostPos(touch) { if (dragGhost) { dragGhost.style.left = (touch.clientX - 50) + 'px'; dragGhost.style.top = (touch.clientY - 25) + 'px'; } }
 function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
 function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
-function handleDrop(e) { 
-    e.preventDefault(); 
-    e.currentTarget.classList.remove('drag-over');
-    if (draggedElement) handleMove(draggedElement, e.currentTarget); 
-}
+function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); if (draggedElement) handleMove(draggedElement, e.currentTarget); }
 
 function handleMove(chip, zone) {
     const fromHelper = chip.closest('#helperList') !== null;
@@ -222,13 +200,13 @@ function handleMove(chip, zone) {
     const fullName = chip.dataset.full;
     const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
 
-    // 名前!NG場所 の判定
+    // NG場所・性別の制限 (修正：男性♢ 女性♦)
     if (fullName.includes('!')) {
-        const ngSpot = fullName.split('!')[1].replace(/[♢♦]/g, '').trim();
-        if (spotName.includes(ngSpot)) { alert(ngSpot + "はNGです"); return; }
+        const ngPart = fullName.split('!')[1].split(/[♢♦]/)[0].trim();
+        if (spotName.includes(ngPart)) { alert(ngPart + "はNGです"); return; }
     }
-    if (spotName.includes("女子トイレ") && fullName.includes('♦')) { alert("男性は入れません"); return; }
-    if (spotName.includes("男子トイレ") && fullName.includes('♢')) { alert("女性は入れません"); return; }
+    if (spotName.includes("女子トイレ") && fullName.includes('♢')) { alert("男性(♢)は入れません"); return; }
+    if (spotName.includes("男子トイレ") && fullName.includes('♦')) { alert("女性(♦)は入れません"); return; }
 
     if (zone.closest('#helperList') && !chip.dataset.isHelper) {
         zone.appendChild(createChip("h-" + Date.now(), fullName, true));
@@ -242,13 +220,9 @@ function saveLayout() {
     const layout = { chips: [], checks: {} };
     document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(zone => {
         const zoneId = zone.closest('.spot-row')?.dataset.rowId || zone.id;
-        Array.from(zone.children).forEach(chip => {
-            layout.chips.push({ id: chip.id, full: chip.dataset.full, isH: chip.dataset.isHelper, zone: zoneId });
-        });
+        Array.from(zone.children).forEach(chip => { layout.chips.push({ id: chip.id, full: chip.dataset.full, isH: chip.dataset.isHelper, zone: zoneId }); });
     });
-    document.querySelectorAll('.spot-row').forEach(row => {
-        layout.checks[row.dataset.rowId] = row.querySelector('input').checked;
-    });
+    document.querySelectorAll('.spot-row').forEach(row => { layout.checks[row.dataset.rowId] = row.querySelector('input').checked; });
     localStorage.setItem('v37_current_layout', JSON.stringify(layout));
 }
 
@@ -276,17 +250,19 @@ function resetChipsToPool() {
 }
 
 function checkStatus() {
-    let allReady = true; let hasChip = false;
+    let allReady = true; let hasAnyChip = false;
     document.querySelectorAll('.spot-row').forEach(row => {
         const hasMember = row.querySelector('.user-chip') !== null;
         const cb = row.querySelector('input');
         if (hasMember) {
-            hasChip = true; row.classList.add('done');
-            if (!cb.checked) allReady = false;
-        } else { row.classList.remove('done'); }
+            hasAnyChip = true; row.classList.add('done');
+            if (!cb.checked) allReady = false; // チップがあるのにチェックなしはNG
+        } else {
+            row.classList.remove('done'); // チップがないところはチェック不問
+        }
     });
     const btn = document.getElementById('saveBtn');
-    if (hasChip && allReady) btn.classList.add('ready'); else btn.classList.remove('ready');
+    if (hasAnyChip && allReady) btn.classList.add('ready'); else btn.classList.remove('ready');
 }
 
 function manualSave() {
@@ -301,11 +277,9 @@ function manualSave() {
     logs.unshift({ month: now.getFullYear() + "年" + (now.getMonth() + 1) + "月", date: dateStr, details: data });
     localStorage.setItem('v37_logs', JSON.stringify(logs));
     
-    // 保存後もチップは残し、チェックだけ外してレイアウトを上書き
     document.querySelectorAll('input').forEach(i => i.checked = false);
-    saveLayout(); 
-    checkStatus();
-    alert("記録を保存しました！チップはそのまま残ります。");
+    saveLayout(); checkStatus();
+    alert("保存しました。チップはそのまま残ります。");
 }
 
 function runShuffle() {
@@ -329,14 +303,13 @@ function resetToShufflePool() {
 }
 
 function saveSettings() {
-    localStorage.setItem('v37_staff_pw', document.getElementById('staff-pw-input').value);
-    localStorage.setItem('v37_entry_pw', document.getElementById('entry-pw-input').value);
     localStorage.setItem('v37_m', document.getElementById('memberInput').value);
     localStorage.setItem('v37_s', document.getElementById('spotInput').value);
     localStorage.setItem('v37_h', document.getElementById('helperInput').value);
+    localStorage.setItem('v37_staff_pw', document.getElementById('staff-pw-input').value);
+    localStorage.setItem('v37_entry_pw', document.getElementById('entry-pw-input').value);
     localStorage.removeItem('v37_current_layout');
-    initBoard();
-    resetChipsToPool();
+    initBoard(); resetChipsToPool();
     alert("設定を保存しました。");
 }
 
@@ -344,23 +317,9 @@ function toggleStaffMode() {
     if (!isStaff) { if (prompt("PW") === (localStorage.getItem('v37_staff_pw') || INITIAL_PW)) { isStaff = true; document.body.classList.add('is-staff'); document.getElementById('staffNav').classList.add('staff-visible'); document.getElementById('modeLabel').innerText = "🔒 利用者モード"; } }
     else { isStaff = false; document.body.classList.remove('is-staff'); document.getElementById('staffNav').classList.remove('staff-visible'); document.getElementById('modeLabel').innerText = "🔓 スタッフ用"; showPage('mainPage'); }
 }
-function showPage(p) { 
-    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active'));
-    document.getElementById(p).classList.add('active');
-    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-    const btn = document.getElementById("btn-" + p.replace('Page',''));
-    if (btn) btn.classList.add('active-nav');
-    if (p === 'historyPage') renderHistory();
-}
-function renderHistory() {
-    const logs = JSON.parse(localStorage.getItem('v37_logs') || "[]");
-    document.getElementById('historyContainer').innerHTML = logs.map((l, i) => `<div style="border-bottom:1px solid #eee; padding:10px;">📅 <b>${l.date}</b><br>${l.details.join(' / ')}</div>`).join('');
-}
-function checkEntry() {
-    if (document.getElementById('entry-pw').value === (localStorage.getItem('v37_entry_pw') || INITIAL_PW)) {
-        localStorage.setItem('v37_is_logged_in', 'true'); location.reload();
-    } else alert("違います");
-}
+function showPage(p) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.getElementById(p).classList.add('active'); document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav')); const btn = document.getElementById("btn-" + p.replace('Page','')); if (btn) btn.classList.add('active-nav'); if (p === 'historyPage') renderHistory(); }
+function renderHistory() { const logs = JSON.parse(localStorage.getItem('v37_logs') || "[]"); document.getElementById('historyContainer').innerHTML = logs.map((l, i) => `<div style="border-bottom:1px solid #eee; padding:10px;">📅 <b>${l.date}</b><br>${l.details.join(' / ')}</div>`).join(''); }
+function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem('v37_entry_pw') || INITIAL_PW)) { localStorage.setItem('v37_is_logged_in', 'true'); location.reload(); } else alert("違います"); }
 function clearAllDels() { document.querySelectorAll('.user-chip').forEach(c => c.classList.remove('show-del')); }
 </script>
 </body>
