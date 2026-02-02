@@ -3,10 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・完全版</title>
+    <title>掃除管理システム・印刷対応版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; --hover-blue: #e1f5fe; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; touch-action: manipulation; }
+        
+        /* 印刷用設定 */
+        @media print {
+            nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, .del-btn, #setupPage {
+                display: none !important;
+            }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; margin: 0; width: 100%; max-width: none; }
+            .main-board-title { background: none; color: black; padding: 10px; font-size: 24px; border-bottom: 2px solid #333; }
+            .section-title { background: #eee; border-left: 10px solid #333; color: black; -webkit-print-color-adjust: exact; }
+            .spot-row { border: 1px solid #ccc; page-break-inside: avoid; }
+            .user-chip { border: 1px solid #333; box-shadow: none; padding: 5px 15px; font-size: 16px; }
+            input[type="checkbox"] { display: none; } /* 印刷時はチェックボックスを隠す（または白抜きにする） */
+        }
+
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--deep-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .auth-box { background: white; padding: 30px; border-radius: 20px; color: #333; text-align: center; width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .auth-input { width: 90%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; text-align: center; }
@@ -27,9 +42,7 @@
         input[type="checkbox"] { width: 35px; height: 35px; margin-right: 15px; flex-shrink: 0; }
         .spot-info { width: 110px; font-weight: bold; color: var(--deep-blue); font-size: 18px; }
         .drop-zone { flex-grow: 1; min-height: 60px; display: flex; flex-wrap: wrap; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 10px; border: 2px solid transparent; transition: 0.2s; }
-        .drop-zone.drag-over { background: var(--hover-blue); border-color: var(--primary-blue); transform: scale(1.02); }
         .user-chip { position: relative; padding: 14px 24px; background: white; border: 1.5px solid #b3e5fc; border-radius: 30px; font-weight: bold; font-size: 20px; color: #0277bd; touch-action: none; white-space: nowrap; cursor: grab; user-select: none; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
-        .user-chip.dragging { opacity: 0.3; transform: scale(1.1); z-index: 1000; }
         .del-btn { position: absolute; top: -8px; right: -8px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: none; }
         .user-chip.show-del .del-btn { display: block; }
         .action-btn { background: #4fc3f7; color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; font-size: 20px; margin: 10px 0; border-bottom: 5px solid #0288d1; cursor: pointer; }
@@ -159,27 +172,25 @@ function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); if (draggedElement) handleMove(draggedElement, e.currentTarget); }
 
 function checkConstraint(fullName, spotName) {
-    // !以降の文字を除外場所として判定
     if (fullName.includes('!')) {
         const parts = fullName.split('!');
         const ngPart = parts[1].split(/[♢♦]/)[0].trim();
         if (spotName.includes(ngPart)) return false;
     }
-    // 性別制限: 男性♢は女子トイレNG, 女性♦は男子トイレNG
     if (spotName.includes("女子トイレ") && fullName.includes('♢')) return false;
     if (spotName.includes("男子トイレ") && fullName.includes('♦')) return false;
     return true;
 }
 
 function handleMove(chip, zone) {
-    const fromHelper = chip.dataset.isHelper === "true";
-    const toMain = zone.closest('#spotsList') !== null;
-    const toHelper = zone.closest('#helperList') !== null;
-    if (fromHelper && toMain) { alert("お助けエリアからは戻せません。"); return; }
+    const isFromH = chip.dataset.isHelper === "true";
+    const toH = zone.closest('#helperList') !== null;
+    const toM = zone.closest('#spotsList') !== null;
+    if (isFromH && toM) { alert("お助けエリアからは戻せません。"); return; }
     const fullName = chip.dataset.full;
     const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
-    if (spotName && !checkConstraint(fullName, spotName)) { alert("NGな場所または性別制限です"); return; }
-    if (toHelper) {
+    if (spotName && !checkConstraint(fullName, spotName)) { alert("制限エリアです"); return; }
+    if (toH && !isFromH) {
         zone.appendChild(createChip("h-" + Date.now(), fullName, true));
     } else {
         zone.appendChild(chip);
@@ -224,24 +235,23 @@ function checkStatus() {
 }
 
 function manualSave() {
-    let data = []; document.querySelectorAll('.spot-row').forEach(row => {
-        const names = Array.from(row.querySelectorAll('.user-chip')).map(c => c.innerText);
-        if (names.length > 0) data.push(`<b>${row.querySelector('.spot-info').innerText}</b>: ${names.join('＆')}`);
-    });
-    // 前回の場所を記憶(シャッフル用)
+    let data = [];
     const currentLocs = {};
     document.querySelectorAll('#spotsList .spot-row').forEach(row => {
-        const name = row.querySelector('.user-chip')?.dataset.full;
-        if(name) currentLocs[name] = row.querySelector('.spot-info').innerText;
+        const info = row.querySelector('.spot-info').innerText;
+        const names = Array.from(row.querySelectorAll('.user-chip')).map(c => {
+            currentLocs[c.dataset.full] = info;
+            return c.innerText;
+        });
+        if (names.length > 0) data.push(`<b>${info}</b>: ${names.join('＆')}`);
     });
     localStorage.setItem('v37_last_locations', JSON.stringify(currentLocs));
-
     const now = new Date(); const dateStr = (now.getMonth() + 1) + "/" + now.getDate() + "(" + ["日","月","火","水","木","金","土"][now.getDay()] + ")";
     const logs = JSON.parse(localStorage.getItem('v37_logs') || "[]");
     logs.unshift({ month: now.getFullYear() + "年" + (now.getMonth() + 1) + "月", date: dateStr, details: data });
     localStorage.setItem('v37_logs', JSON.stringify(logs));
     document.querySelectorAll('input').forEach(i => i.checked = false); saveLayout(); checkStatus();
-    alert("記録を保存しました。");
+    alert("保存しました。印刷する時はブラウザのメニューから選んでね！");
 }
 
 function runShuffle() {
@@ -250,28 +260,20 @@ function runShuffle() {
     resetToShufflePool();
     const zones = Array.from(document.querySelectorAll('#spotsList .drop-zone'));
     const chips = Array.from(document.getElementById('shufflePool').children);
-    
-    // シャッフル
     const shuffledChips = chips.sort(() => Math.random() - 0.5);
-    
     shuffledChips.forEach(chip => {
         const fullName = chip.dataset.full;
         const lastSpot = lastLocs[fullName] || "";
-        
-        // 1. NG・性別制限・「前回と同じ場所」を避けて探す
         let validZone = zones.find(z => {
             const spotName = z.closest('.spot-row').querySelector('.spot-info').innerText;
             return z.children.length === 0 && checkConstraint(fullName, spotName) && spotName !== lastSpot;
         });
-
-        // 2. もし↑で見つからなければ、「前回と同じ場所」だけ許容して再検索
         if (!validZone) {
             validZone = zones.find(z => {
                 const spotName = z.closest('.spot-row').querySelector('.spot-info').innerText;
                 return z.children.length === 0 && checkConstraint(fullName, spotName);
             });
         }
-
         if (validZone) validZone.appendChild(chip);
     });
     saveLayout(); checkStatus();
@@ -290,7 +292,7 @@ function saveSettings() {
     localStorage.setItem('v37_h', document.getElementById('helperInput').value);
     localStorage.setItem('v37_staff_pw', document.getElementById('staff-pw-input').value);
     localStorage.setItem('v37_entry_pw', document.getElementById('entry-pw-input').value);
-    localStorage.removeItem('v37_current_layout'); initBoard(); resetChipsToPool(); alert("設定を保存しました。");
+    localStorage.removeItem('v37_current_layout'); initBoard(); resetChipsToPool(); alert("設定を更新しました。");
 }
 
 function toggleStaffMode() {
@@ -299,7 +301,7 @@ function toggleStaffMode() {
 }
 function showPage(p) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.getElementById(p).classList.add('active'); document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav')); const btn = document.getElementById("btn-" + p.replace('Page','')); if (btn) btn.classList.add('active-nav'); if (p === 'historyPage') renderHistory(); }
 function renderHistory() { const logs = JSON.parse(localStorage.getItem('v37_logs') || "[]"); document.getElementById('historyContainer').innerHTML = logs.map((l, i) => `<div style="border-bottom:1px solid #eee; padding:10px;">📅 <b>${l.date}</b><br>${l.details.join(' / ')}</div>`).join(''); }
-function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem('v37_entry_pw') || INITIAL_PW)) { localStorage.setItem('v37_is_logged_in', 'true'); location.reload(); } else alert("違います"); }
+function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem('v37_entry_pw') || INITIAL_PW)) { localStorage.setItem('v37_is_logged_in', 'true'); location.reload(); } else alert("合言葉が違います"); }
 function clearAllDels() { document.querySelectorAll('.user-chip').forEach(c => c.classList.remove('show-del')); }
 </script>
 </body>
