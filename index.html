@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・完全修正版</title>
+    <title>掃除管理ボード・最終安定版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; }
         
-        /* 🖨️ 印刷専用設定 */
+        /* 🖨️ 印刷設定 */
         @media print {
             nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, #setupPage, #mainPage, #modeLabel, .no-print, .main-board-title, .del-day-btn {
                 display: none !important;
             }
-            #historyPage { display: block !important; }
-            .history-item { display: block !important; border: 1px solid #000; margin-bottom: 8px; padding: 10px; page-break-inside: avoid; }
-            .history-content { display: block !important; font-size: 14px; color: #000; }
-            .history-item:nth-child(n+7) { display: none !important; }
+            #historyPage { display: block !important; width: 100%; }
+            .history-item { display: block !important; border: 1px solid #333; margin-bottom: 10px; padding: 12px; page-break-inside: avoid; }
+            .history-content { display: block !important; font-size: 14px; color: #000; line-height: 1.4; }
+            .history-item:nth-child(n+7) { display: none !important; } /* 5日分+タイトル等 */
         }
 
-        /* 画面表示用 */
+        /* 画面用 */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--deep-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .auth-box { background: white; padding: 30px; border-radius: 20px; color: #333; text-align: center; width: 85%; max-width: 320px; }
         .auth-input { width: 90%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; text-align: center; }
@@ -32,29 +32,23 @@
         .mode-switch { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 25px; font-size: 13px; z-index: 1000; }
         .page { display: none; } .page.active { display: block; }
         .section-title { background: #f0f7ff; color: var(--deep-blue); padding: 12px 18px; border-left: 6px solid var(--primary-blue); border-radius: 6px; font-weight: bold; margin: 25px 0 10px; }
-        .member-zone, .shuffle-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; }
-        .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; margin-bottom: 20px; }
+        .member-zone, .shuffle-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; }
+        .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; }
         .spots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px; }
         .spot-row { display: flex; align-items: center; padding: 12px; border: 1px solid #e1e8ed; border-radius: 15px; margin-bottom: 8px; background: #fff; }
         .spot-row.done { background-color: #e8f5e9; }
         .spot-info { width: 100px; font-weight: bold; color: var(--deep-blue); font-size: 18px; }
-        .drop-zone { flex-grow: 1; min-height: 50px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8f9fa; border-radius: 10px; padding: 8px; }
-        .user-chip { position: relative; padding: 10px 18px; background: white; border: 1px solid #b3e5fc; border-radius: 25px; font-weight: bold; font-size: 18px; color: #0277bd; cursor: grab; }
-        
-        /* 削除ボタン（名前） */
+        .drop-zone { flex-grow: 1; min-height: 50px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8f9fa; border-radius: 10px; padding: 8px; border: 1px solid #eee; }
+        .user-chip { position: relative; padding: 10px 18px; background: white; border: 1px solid #b3e5fc; border-radius: 25px; font-weight: bold; font-size: 18px; color: #0277bd; cursor: grab; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .del-btn { position: absolute; top: -10px; right: -10px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; display: none; z-index: 10; cursor: pointer; }
         .user-chip.show-del .del-btn { display: block; }
-
-        .action-btn { background: #4fc3f7; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; font-size: 18px; margin: 10px 0; border-bottom: 4px solid #0288d1; }
+        .action-btn { background: #4fc3f7; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; font-size: 18px; margin: 10px 0; border-bottom: 4px solid #0288d1; cursor: pointer; }
         .save-btn { background: var(--accent-red); border-bottom-color: #c62828; display: none; margin-top: 20px; }
         .save-btn.ready { display: block; }
-        
-        /* 履歴スタイル */
         .history-item { position: relative; border-bottom: 1px solid #eee; padding: 15px; background: #fff; margin-bottom: 5px; border-radius: 10px; cursor: pointer; }
         .history-content { display: none; margin-top: 10px; color: #444; font-size: 16px; line-height: 1.6; }
         .history-item.open .history-content { display: block; }
         .del-day-btn { position: absolute; top: 12px; right: 12px; background: #f44336; color: white; border: none; border-radius: 5px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
-        
         textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; }
         .staff-only { display: none; } .is-staff .staff-only { display: block; }
     </style>
@@ -72,13 +66,11 @@
 <div id="main-content" style="display:none;">
     <div class="main-board-title">🧹 掃除当番ボード</div>
     <button class="mode-switch no-print" onclick="toggleStaffMode()" id="modeLabel">🔓 スタッフ用</button>
-    
     <nav id="staffNav" class="no-print">
         <button onclick="showPage('historyPage')" id="btn-history">📝 履歴</button>
         <button onclick="showPage('mainPage')" id="btn-main" class="active-nav">🏠 当番表</button>
         <button onclick="showPage('setupPage')" id="btn-setup">⚙️ 設定</button>
     </nav>
-
     <div class="container">
         <div id="mainPage" class="page active">
             <div class="staff-only">
@@ -97,7 +89,6 @@
             <div id="helperList" class="spots-grid"></div>
             <button id="saveBtn" class="action-btn save-btn" onclick="manualSave()">✅ 今日の記録を保存</button>
         </div>
-
         <div id="historyPage" class="page">
             <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:10px;">
                 <h2 style="margin:0;">📝 掃除の履歴</h2>
@@ -105,7 +96,6 @@
             </div>
             <div id="historyContainer"></div>
         </div>
-
         <div id="setupPage" class="page">
             <h2>⚙️ 設定</h2>
             <p>スタッフPW: <input type="password" id="staff-pw-input" class="auth-input" style="width:100px; padding:5px;"></p>
@@ -120,10 +110,11 @@
 
 <script>
 let isStaff = false; let draggedElement = null; const INITIAL_PW = "8277";
-const DB = "vFinal_Revised_";
+// 🛠️ 保存キーを固定（これで次回以降もデータが消えません）
+const DB = "SOJI_DATA_STABLE";
 
 window.onload = function() {
-    if (localStorage.getItem(DB + 'logged') === 'true') {
+    if (localStorage.getItem(DB + '_logged') === 'true') {
         document.getElementById('auth-overlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         initBoard(); loadLayout();
@@ -131,14 +122,14 @@ window.onload = function() {
 };
 
 function initBoard() {
-    const m = localStorage.getItem(DB+'m') || "利用者A♢\n利用者B♦";
-    const s = localStorage.getItem(DB+'s') || "女子トイレ\n男子トイレ\nフロア";
-    const h = localStorage.getItem(DB+'h') || "窓拭き";
+    const m = localStorage.getItem(DB+'_m') || "利用者A♢\n利用者B♦";
+    const s = localStorage.getItem(DB+'_s') || "女子トイレ\n男子トイレ\nフロア";
+    const h = localStorage.getItem(DB+'_h') || "窓拭き";
     document.getElementById('memberInput').value = m;
     document.getElementById('spotInput').value = s;
     document.getElementById('helperInput').value = h;
-    document.getElementById('staff-pw-input').value = localStorage.getItem(DB+'staff_pw') || INITIAL_PW;
-    document.getElementById('entry-pw-input').value = localStorage.getItem(DB+'entry_pw') || INITIAL_PW;
+    document.getElementById('staff-pw-input').value = localStorage.getItem(DB+'_staff_pw') || INITIAL_PW;
+    document.getElementById('entry-pw-input').value = localStorage.getItem(DB+'_entry_pw') || INITIAL_PW;
 
     const setupUI = (id, txt) => {
         const target = document.getElementById(id); target.innerHTML = "";
@@ -191,7 +182,7 @@ function checkConstraint(full, spot) {
 }
 
 function runShuffle() {
-    const last = JSON.parse(localStorage.getItem(DB+'last_loc') || "{}");
+    const last = JSON.parse(localStorage.getItem(DB+'_last_loc') || "{}");
     const pool = document.getElementById('shufflePool'); const chips = Array.from(pool.children);
     if (!chips.length) return;
     const zones = Array.from(document.querySelectorAll('#spotsList .drop-zone'));
@@ -209,25 +200,25 @@ function manualSave() {
         const names = Array.from(row.querySelectorAll('.user-chip')).map(c => { current[c.dataset.full] = spot; return c.innerText; });
         if (names.length) data.push(`【${spot}】${names.join(', ')}`);
     });
-    localStorage.setItem(DB+'last_loc', JSON.stringify(current));
-    const logs = JSON.parse(localStorage.getItem(DB+'logs') || "[]");
+    localStorage.setItem(DB+'_last_loc', JSON.stringify(current));
+    const logs = JSON.parse(localStorage.getItem(DB+'_logs') || "[]");
     const d = new Date(); 
     logs.unshift({ id: Date.now(), date: `${d.getMonth()+1}/${d.getDate()}(${["日","月","火","水","木","金","土"][d.getDay()]})`, detail: data.join(' / ') });
-    localStorage.setItem(DB+'logs', JSON.stringify(logs.slice(0, 50)));
+    localStorage.setItem(DB+'_logs', JSON.stringify(logs.slice(0, 50)));
     alert("保存しました！");
 }
 
 function deleteDay(id, e) {
     e.stopPropagation();
     if (!confirm("この日の履歴を削除しますか？")) return;
-    let logs = JSON.parse(localStorage.getItem(DB+'logs') || "[]");
+    let logs = JSON.parse(localStorage.getItem(DB+'_logs') || "[]");
     logs = logs.filter(l => l.id !== id);
-    localStorage.setItem(DB+'logs', JSON.stringify(logs));
+    localStorage.setItem(DB+'_logs', JSON.stringify(logs));
     renderHistory();
 }
 
 function renderHistory() {
-    const logs = JSON.parse(localStorage.getItem(DB+'logs') || "[]");
+    const logs = JSON.parse(localStorage.getItem(DB+'_logs') || "[]");
     document.getElementById('historyContainer').innerHTML = logs.map((l, i) => `
         <div class="history-item ${i===0?'open':''}" onclick="this.classList.toggle('open')">
             <b>📅 ${l.date}</b>
@@ -237,12 +228,12 @@ function renderHistory() {
 }
 
 function saveSettings() {
-    localStorage.setItem(DB+'m', document.getElementById('memberInput').value);
-    localStorage.setItem(DB+'s', document.getElementById('spotInput').value);
-    localStorage.setItem(DB+'h', document.getElementById('helperInput').value);
-    localStorage.setItem(DB+'staff_pw', document.getElementById('staff-pw-input').value);
-    localStorage.setItem(DB+'entry_pw', document.getElementById('entry-pw-input').value);
-    localStorage.removeItem(DB+'layout');
+    localStorage.setItem(DB+'_m', document.getElementById('memberInput').value);
+    localStorage.setItem(DB+'_s', document.getElementById('spotInput').value);
+    localStorage.setItem(DB+'_h', document.getElementById('helperInput').value);
+    localStorage.setItem(DB+'_staff_pw', document.getElementById('staff-pw-input').value);
+    localStorage.setItem(DB+'_entry_pw', document.getElementById('entry-pw-input').value);
+    localStorage.removeItem(DB+'_layout');
     location.reload();
 }
 
@@ -252,11 +243,11 @@ function saveLayout() {
             chips.push({id:c.id, full:c.dataset.full, zone:c.parentElement.id || c.parentElement.closest('.spot-row').dataset.rowId});
         }
     });
-    localStorage.setItem(DB+'layout', JSON.stringify(chips));
+    localStorage.setItem(DB+'_layout', JSON.stringify(chips));
 }
 
 function loadLayout() {
-    const data = JSON.parse(localStorage.getItem(DB+'layout') || "[]");
+    const data = JSON.parse(localStorage.getItem(DB+'_layout') || "[]");
     const m = document.getElementById('memberInput').value;
     if (!data.length) { 
         m.split('\n').filter(n=>n.trim()).forEach((n,i)=>document.getElementById('shufflePool').appendChild(createChip("u-"+i, n)));
@@ -283,11 +274,11 @@ function showPage(p) {
 }
 
 function toggleStaffMode() {
-    if (!isStaff) { if (prompt("PW") === (localStorage.getItem(DB+'staff_pw')||INITIAL_PW)) { isStaff=true; document.body.classList.add('is-staff'); document.getElementById('staffNav').classList.add('staff-visible'); } }
+    if (!isStaff) { if (prompt("PW") === (localStorage.getItem(DB+'_staff_pw')||INITIAL_PW)) { isStaff=true; document.body.classList.add('is-staff'); document.getElementById('staffNav').classList.add('staff-visible'); } }
     else { isStaff=false; document.body.classList.remove('is-staff'); document.getElementById('staffNav').classList.remove('staff-visible'); showPage('mainPage'); }
 }
 
-function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem(DB+'entry_pw')||INITIAL_PW)) { localStorage.setItem(DB+'logged','true'); location.reload(); } else alert("合言葉が違います"); }
+function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem(DB+'_entry_pw')||INITIAL_PW)) { localStorage.setItem(DB+'_logged','true'); location.reload(); } else alert("合言葉が違います"); }
 function clearAllDels() { document.querySelectorAll('.user-chip').forEach(c => c.classList.remove('show-del')); }
 function resetToShufflePool() { document.querySelectorAll('.drop-zone .user-chip').forEach(c => { if(c.dataset.isHelper==="true") c.remove(); else document.getElementById('shufflePool').appendChild(c); }); saveLayout(); checkStatus(); }
 </script>
