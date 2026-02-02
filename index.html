@@ -39,8 +39,10 @@
         .user-chip.show-del .del-btn { display: block; }
 
         .action-btn { background: #4fc3f7; color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; font-size: 20px; margin: 10px 0; border-bottom: 5px solid #0288d1; cursor: pointer; }
+        /* 保存ボタンは最初は隠しておき、readyクラスがついたら表示 */
         .save-btn { background: var(--accent-red); border-bottom-color: #c62828; display: none; margin-top: 30px; }
         .save-btn.ready { display: block; }
+
         textarea { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
         .staff-only { display: none; } .is-staff .staff-only { display: block; }
     </style>
@@ -195,16 +197,21 @@ function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('d
 function handleMove(chip, zone) {
     const fromHelper = chip.closest('#helperList') !== null;
     const toMain = zone.closest('#spotsList') !== null;
-    if (!isStaff && fromHelper && toMain) { alert("お助けエリアからは戻せません。"); return; }
+    const toStaffZones = zone.closest('.member-zone, .shuffle-zone') !== null;
+
+    if (!isStaff) {
+        if (fromHelper && toMain) { alert("お助けエリアからは戻せません。"); return; }
+        if (toStaffZones) { alert("そこには移動できません。"); return; }
+    }
     
     const fullName = chip.dataset.full;
     const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
 
-    // NG場所・性別の制限 (修正：男性♢ 女性♦)
     if (fullName.includes('!')) {
         const ngPart = fullName.split('!')[1].split(/[♢♦]/)[0].trim();
         if (spotName.includes(ngPart)) { alert(ngPart + "はNGです"); return; }
     }
+    // 男性＝♢、女性＝♦
     if (spotName.includes("女子トイレ") && fullName.includes('♢')) { alert("男性(♢)は入れません"); return; }
     if (spotName.includes("男子トイレ") && fullName.includes('♦')) { alert("女性(♦)は入れません"); return; }
 
@@ -256,9 +263,9 @@ function checkStatus() {
         const cb = row.querySelector('input');
         if (hasMember) {
             hasAnyChip = true; row.classList.add('done');
-            if (!cb.checked) allReady = false; // チップがあるのにチェックなしはNG
+            if (!cb.checked) allReady = false;
         } else {
-            row.classList.remove('done'); // チップがないところはチェック不問
+            row.classList.remove('done');
         }
     });
     const btn = document.getElementById('saveBtn');
@@ -279,7 +286,7 @@ function manualSave() {
     
     document.querySelectorAll('input').forEach(i => i.checked = false);
     saveLayout(); checkStatus();
-    alert("保存しました。チップはそのまま残ります。");
+    alert("保存しました。");
 }
 
 function runShuffle() {
