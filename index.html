@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・完全復活版</title>
+    <title>掃除管理システム・完全版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; --hover-blue: #e1f5fe; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; touch-action: manipulation; }
         
-        /* 印刷用設定 */
         @media print {
-            nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, .del-btn, #setupPage, #shufflePool, .section-title:nth-of-type(1), .section-title:nth-of-type(2) {
-                display: none !important;
-            }
+            nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, .del-btn, #setupPage, #shufflePool { display: none !important; }
             body { background: white; padding: 0; }
             .container { box-shadow: none; margin: 0; width: 100%; max-width: none; }
             .main-board-title { background: none; color: black; padding: 10px; font-size: 24px; border-bottom: 2px solid #333; }
@@ -88,12 +85,10 @@
             <div id="helperList" class="spots-grid"></div>
             <button id="saveBtn" class="action-btn save-btn" onclick="manualSave()">✅ 今日の記録を保存</button>
         </div>
-
         <div id="historyPage" class="page">
             <h2 style="margin:0;">📝 履歴</h2>
             <div id="historyContainer"></div>
         </div>
-
         <div id="setupPage" class="page">
             <h2>⚙️ 設定</h2>
             <p>スタッフPW: <input type="password" id="staff-pw-input" class="auth-input" style="width:100px; padding:5px;"></p>
@@ -108,9 +103,10 @@
 
 <script>
 let isStaff = false; let draggedElement = null; let dragGhost = null; const INITIAL_PW = "8277";
+const DB_PREFIX = "v38_"; // バージョン固定
 
 window.onload = function() {
-    if (localStorage.getItem('v37_is_logged_in') === 'true') {
+    if (localStorage.getItem(DB_PREFIX + 'is_logged_in') === 'true') {
         document.getElementById('auth-overlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
         initBoard(); loadLayout();
@@ -118,12 +114,14 @@ window.onload = function() {
 };
 
 function initBoard() {
-    const m = localStorage.getItem('v37_m') || "利用者A♢\n利用者B♦";
-    const s = localStorage.getItem('v37_s') || "女子トイレ\n男子トイレ\nフロア";
-    const h = localStorage.getItem('v37_h') || "窓拭き";
-    document.getElementById('memberInput').value = m; document.getElementById('spotInput').value = s; document.getElementById('helperInput').value = h;
-    document.getElementById('staff-pw-input').value = localStorage.getItem('v37_staff_pw') || INITIAL_PW;
-    document.getElementById('entry-pw-input').value = localStorage.getItem('v37_entry_pw') || INITIAL_PW;
+    const m = localStorage.getItem(DB_PREFIX + 'm') || "利用者A♢\n利用者B♦";
+    const s = localStorage.getItem(DB_PREFIX + 's') || "女子トイレ\n男子トイレ\nフロア";
+    const h = localStorage.getItem(DB_PREFIX + 'h') || "窓拭き";
+    document.getElementById('memberInput').value = m;
+    document.getElementById('spotInput').value = s;
+    document.getElementById('helperInput').value = h;
+    document.getElementById('staff-pw-input').value = localStorage.getItem(DB_PREFIX + 'staff_pw') || INITIAL_PW;
+    document.getElementById('entry-pw-input').value = localStorage.getItem(DB_PREFIX + 'entry_pw') || INITIAL_PW;
 
     const setupUI = (id, txt) => {
         const target = document.getElementById(id); target.innerHTML = "";
@@ -203,7 +201,7 @@ function handleMove(chip, zone) {
 
 function runShuffle() {
     if(!isStaff) return;
-    const lastLocs = JSON.parse(localStorage.getItem('v37_last_locations') || "{}");
+    const lastLocs = JSON.parse(localStorage.getItem(DB_PREFIX + 'last_locations') || "{}");
     const pool = document.getElementById('shufflePool');
     const chips = Array.from(pool.children);
     if (chips.length === 0) { alert("シャッフル対象枠にメンバーを入れてください"); return; }
@@ -234,11 +232,11 @@ function saveLayout() {
         Array.from(zone.children).forEach(chip => { layout.chips.push({ id: chip.id, full: chip.dataset.full, isH: chip.dataset.isHelper, zone: zoneId }); });
     });
     document.querySelectorAll('.spot-row').forEach(row => { layout.checks[row.dataset.rowId] = row.querySelector('input').checked; });
-    localStorage.setItem('v37_current_layout', JSON.stringify(layout));
+    localStorage.setItem(DB_PREFIX + 'current_layout', JSON.stringify(layout));
 }
 
 function loadLayout() {
-    const data = localStorage.getItem('v37_current_layout'); if (!data) { resetChipsToPool(); return; }
+    const data = localStorage.getItem(DB_PREFIX + 'current_layout'); if (!data) { resetChipsToPool(); return; }
     const layout = JSON.parse(data); document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(z => z.innerHTML = "");
     layout.chips.forEach(c => {
         const chip = createChip(c.id, c.full, c.isH === "true");
@@ -257,7 +255,7 @@ function resetToShufflePool() {
 }
 
 function resetChipsToPool() {
-    const m = localStorage.getItem('v37_m') || ""; const pool = document.getElementById('shufflePool'); pool.innerHTML = "";
+    const m = localStorage.getItem(DB_PREFIX + 'm') || ""; const pool = document.getElementById('shufflePool'); pool.innerHTML = "";
     m.split('\n').filter(n => n.trim()).forEach((n, i) => pool.appendChild(createChip("u-"+i, n)));
 }
 
@@ -277,31 +275,45 @@ function manualSave() {
         const names = Array.from(row.querySelectorAll('.user-chip')).map(c => { currentLocs[c.dataset.full] = info; return c.innerText; });
         if (names.length > 0) data.push(`<b>${info}</b>: ${names.join('＆')}`);
     });
-    localStorage.setItem('v37_last_locations', JSON.stringify(currentLocs));
+    localStorage.setItem(DB_PREFIX + 'last_locations', JSON.stringify(currentLocs));
     const now = new Date(); const dateStr = (now.getMonth() + 1) + "/" + now.getDate() + "(" + ["日","月","火","水","木","金","土"][now.getDay()] + ")";
-    const logs = JSON.parse(localStorage.getItem('v37_logs') || "[]");
+    const logs = JSON.parse(localStorage.getItem(DB_PREFIX + 'logs') || "[]");
     logs.unshift({ month: now.getFullYear() + "年" + (now.getMonth() + 1) + "月", date: dateStr, details: data });
-    localStorage.setItem('v37_logs', JSON.stringify(logs));
+    localStorage.setItem(DB_PREFIX + 'logs', JSON.stringify(logs));
     document.querySelectorAll('input').forEach(i => i.checked = false); saveLayout(); checkStatus();
     alert("保存しました。");
 }
 
 function saveSettings() {
-    localStorage.setItem('v37_m', document.getElementById('memberInput').value);
-    localStorage.setItem('v37_s', document.getElementById('spotInput').value);
-    localStorage.setItem('v37_h', document.getElementById('helperInput').value);
-    localStorage.setItem('v37_staff_pw', document.getElementById('staff-pw-input').value);
-    localStorage.setItem('v37_entry_pw', document.getElementById('entry-pw-input').value);
-    localStorage.removeItem('v37_current_layout'); initBoard(); resetChipsToPool(); alert("設定を更新しました。");
+    localStorage.setItem(DB_PREFIX + 'm', document.getElementById('memberInput').value);
+    localStorage.setItem(DB_PREFIX + 's', document.getElementById('spotInput').value);
+    localStorage.setItem(DB_PREFIX + 'h', document.getElementById('helperInput').value);
+    localStorage.setItem(DB_PREFIX + 'staff_pw', document.getElementById('staff-pw-input').value);
+    localStorage.setItem(DB_PREFIX + 'entry_pw', document.getElementById('entry-pw-input').value);
+    localStorage.removeItem(DB_PREFIX + 'current_layout'); initBoard(); resetChipsToPool(); alert("設定を更新しました。");
 }
 
-function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem('v37_entry_pw') || INITIAL_PW)) { localStorage.setItem('v37_is_logged_in', 'true'); location.reload(); } else alert("合言葉が違います"); }
+function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem(DB_PREFIX + 'entry_pw') || INITIAL_PW)) { localStorage.setItem(DB_PREFIX + 'is_logged_in', 'true'); location.reload(); } else alert("合言葉が違います"); }
+
 function toggleStaffMode() {
-    if (!isStaff) { if (prompt("PW") === (localStorage.getItem('v37_staff_pw') || INITIAL_PW)) { isStaff = true; document.body.classList.add('is-staff'); document.getElementById('staffNav').classList.add('staff-visible'); document.getElementById('modeLabel').innerText = "🔒 利用者モード"; } }
+    if (!isStaff) { if (prompt("PW") === (localStorage.getItem(DB_PREFIX + 'staff_pw') || INITIAL_PW)) { isStaff = true; document.body.classList.add('is-staff'); document.getElementById('staffNav').classList.add('staff-visible'); document.getElementById('modeLabel').innerText = "🔒 利用者モード"; } }
     else { isStaff = false; document.body.classList.remove('is-staff'); document.getElementById('staffNav').classList.remove('staff-visible'); document.getElementById('modeLabel').innerText = "🔓 スタッフ用"; showPage('mainPage'); }
 }
-function showPage(p) { document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.getElementById(p).classList.add('active'); document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav')); const btn = document.getElementById("btn-" + p.replace('Page','')); if (btn) btn.classList.add('active-nav'); if (p === 'historyPage') renderHistory(); }
-function renderHistory() { const logs = JSON.parse(localStorage.getItem('v37_logs') || "[]"); document.getElementById('historyContainer').innerHTML = logs.map((l, i) => `<div style="border-bottom:1px solid #eee; padding:10px;">📅 <b>${l.date}</b><br>${l.details.join(' / ')}</div>`).join(''); }
+
+function showPage(p) { 
+    document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); 
+    document.getElementById(p).classList.add('active'); 
+    document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav')); 
+    const btnId = "btn-" + p.replace('Page','');
+    const btn = document.getElementById(btnId); if (btn) btn.classList.add('active-nav'); 
+    if (p === 'historyPage') renderHistory(); 
+}
+
+function renderHistory() { 
+    const logs = JSON.parse(localStorage.getItem(DB_PREFIX + 'logs') || "[]"); 
+    document.getElementById('historyContainer').innerHTML = logs.map((l, i) => `<div style="border-bottom:1px solid #eee; padding:10px;">📅 <b>${l.date}</b><br>${l.details.join(' / ')}</div>`).join(''); 
+}
+
 function clearAllDels() { document.querySelectorAll('.user-chip').forEach(c => c.classList.remove('show-del')); }
 </script>
 </body>
