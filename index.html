@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・確定版</title>
+    <title>掃除管理システム・完全版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; --hover-blue: #e1f5fe; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; touch-action: manipulation; }
@@ -159,10 +159,13 @@ function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); if (draggedElement) handleMove(draggedElement, e.currentTarget); }
 
 function checkConstraint(fullName, spotName) {
+    // !以降の文字を除外場所として判定
     if (fullName.includes('!')) {
-        const ngPart = fullName.split('!')[1].split(/[♢♦]/)[0].trim();
+        const parts = fullName.split('!');
+        const ngPart = parts[1].split(/[♢♦]/)[0].trim();
         if (spotName.includes(ngPart)) return false;
     }
+    // 性別制限: 男性♢は女子トイレNG, 女性♦は男子トイレNG
     if (spotName.includes("女子トイレ") && fullName.includes('♢')) return false;
     if (spotName.includes("男子トイレ") && fullName.includes('♦')) return false;
     return true;
@@ -172,15 +175,11 @@ function handleMove(chip, zone) {
     const fromHelper = chip.dataset.isHelper === "true";
     const toMain = zone.closest('#spotsList') !== null;
     const toHelper = zone.closest('#helperList') !== null;
-
     if (fromHelper && toMain) { alert("お助けエリアからは戻せません。"); return; }
-    
     const fullName = chip.dataset.full;
     const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
-    if (!checkConstraint(fullName, spotName)) { alert("NGな場所または性別制限です"); return; }
-
+    if (spotName && !checkConstraint(fullName, spotName)) { alert("NGな場所または性別制限です"); return; }
     if (toHelper) {
-        // コピー作成
         zone.appendChild(createChip("h-" + Date.now(), fullName, true));
     } else {
         zone.appendChild(chip);
@@ -229,6 +228,14 @@ function manualSave() {
         const names = Array.from(row.querySelectorAll('.user-chip')).map(c => c.innerText);
         if (names.length > 0) data.push(`<b>${row.querySelector('.spot-info').innerText}</b>: ${names.join('＆')}`);
     });
+    // 前回の場所を記憶(シャッフル用)
+    const currentLocs = {};
+    document.querySelectorAll('#spotsList .spot-row').forEach(row => {
+        const name = row.querySelector('.user-chip')?.dataset.full;
+        if(name) currentLocs[name] = row.querySelector('.spot-info').innerText;
+    });
+    localStorage.setItem('v37_last_locations', JSON.stringify(currentLocs));
+
     const now = new Date(); const dateStr = (now.getMonth() + 1) + "/" + now.getDate() + "(" + ["日","月","火","水","木","金","土"][now.getDay()] + ")";
     const logs = JSON.parse(localStorage.getItem('v37_logs') || "[]");
     logs.unshift({ month: now.getFullYear() + "年" + (now.getMonth() + 1) + "月", date: dateStr, details: data });
@@ -239,19 +246,32 @@ function manualSave() {
 
 function runShuffle() {
     if(!isStaff) return;
+    const lastLocs = JSON.parse(localStorage.getItem('v37_last_locations') || "{}");
     resetToShufflePool();
     const zones = Array.from(document.querySelectorAll('#spotsList .drop-zone'));
     const chips = Array.from(document.getElementById('shufflePool').children);
     
-    // 1人ずつ、NGを考慮して配置
+    // シャッフル
     const shuffledChips = chips.sort(() => Math.random() - 0.5);
+    
     shuffledChips.forEach(chip => {
         const fullName = chip.dataset.full;
-        // その人が入れる（空いている）ゾーンを探す
-        const validZone = zones.find(z => {
+        const lastSpot = lastLocs[fullName] || "";
+        
+        // 1. NG・性別制限・「前回と同じ場所」を避けて探す
+        let validZone = zones.find(z => {
             const spotName = z.closest('.spot-row').querySelector('.spot-info').innerText;
-            return z.children.length === 0 && checkConstraint(fullName, spotName);
+            return z.children.length === 0 && checkConstraint(fullName, spotName) && spotName !== lastSpot;
         });
+
+        // 2. もし↑で見つからなければ、「前回と同じ場所」だけ許容して再検索
+        if (!validZone) {
+            validZone = zones.find(z => {
+                const spotName = z.closest('.spot-row').querySelector('.spot-info').innerText;
+                return z.children.length === 0 && checkConstraint(fullName, spotName);
+            });
+        }
+
         if (validZone) validZone.appendChild(chip);
     });
     saveLayout(); checkStatus();
