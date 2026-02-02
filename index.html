@@ -3,59 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・運用特化版</title>
+    <title>掃除管理システム・完全修正版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; }
         
-        /* 印刷設定：A4 1枚に5日分収めるための調整 */
+        /* 🖨️ 印刷専用設定 */
         @media print {
-            nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, .del-btn, #setupPage, #modeLabel, .no-print {
+            nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, #setupPage, #mainPage, #modeLabel, .no-print, .main-board-title, .del-day-btn {
                 display: none !important;
             }
-            body { background: white; padding: 0; margin: 0; }
-            .container { box-shadow: none; margin: 0; width: 100%; max-width: none; padding: 0; }
-            .history-item { 
-                display: block !important; /* 印刷時は強制的に全部開く */
-                border: 1px solid #ccc; 
-                margin-bottom: 10px; 
-                padding: 10px; 
-                page-break-inside: avoid;
-                font-size: 14px; /* A4で5日分入るサイズ */
-            }
-            .history-item:nth-child(n+6) { display: none !important; } /* 5日分より古いのは印刷しない */
-            .main-board-title { font-size: 20px; padding: 10px; color: black; background: none; border-bottom: 2px solid #333; }
+            #historyPage { display: block !important; }
+            .history-item { display: block !important; border: 1px solid #000; margin-bottom: 8px; padding: 10px; page-break-inside: avoid; }
+            .history-content { display: block !important; font-size: 14px; color: #000; }
+            .history-item:nth-child(n+7) { display: none !important; }
         }
 
+        /* 画面表示用 */
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--deep-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .auth-box { background: white; padding: 30px; border-radius: 20px; color: #333; text-align: center; width: 85%; max-width: 320px; }
         .auth-input { width: 90%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; text-align: center; }
-        .main-board-title { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); color: white; text-align: center; padding: 25px 10px; font-size: 28px; font-weight: 900; }
+        .main-board-title { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); color: white; text-align: center; padding: 25px 10px; font-size: 26px; font-weight: bold; }
         .container { background: white; max-width: 1000px; margin: 15px auto; padding: 20px; border-radius: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         nav { display: none; justify-content: space-around; background: #263238; padding: 10px 0; position: sticky; top: 0; z-index: 100; }
         nav.staff-visible { display: flex; }
         nav button { background: #455a64; border: none; color: white; font-weight: bold; padding: 12px; border-radius: 10px; flex: 1; margin: 0 5px; cursor: pointer; }
         nav button.active-nav { background: var(--primary-blue); }
-        .mode-switch { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 25px; font-size: 13px; z-index: 1000; cursor: pointer; }
+        .mode-switch { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 25px; font-size: 13px; z-index: 1000; }
         .page { display: none; } .page.active { display: block; }
         .section-title { background: #f0f7ff; color: var(--deep-blue); padding: 12px 18px; border-left: 6px solid var(--primary-blue); border-radius: 6px; font-weight: bold; margin: 25px 0 10px; }
-        .member-zone, .shuffle-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; }
-        .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; }
+        .member-zone, .shuffle-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; }
+        .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; margin-bottom: 20px; }
         .spots-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 10px; }
-        .spot-row { display: flex; align-items: center; padding: 12px; border: 1px solid #e1e8ed; border-radius: 15px; margin-bottom: 8px; }
+        .spot-row { display: flex; align-items: center; padding: 12px; border: 1px solid #e1e8ed; border-radius: 15px; margin-bottom: 8px; background: #fff; }
         .spot-row.done { background-color: #e8f5e9; }
-        .spot-info { width: 100px; font-weight: bold; color: var(--deep-blue); }
-        .drop-zone { flex-grow: 1; min-height: 50px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8f9fa; border-radius: 10px; padding: 8px; border: 1px solid #eee; }
+        .spot-info { width: 100px; font-weight: bold; color: var(--deep-blue); font-size: 18px; }
+        .drop-zone { flex-grow: 1; min-height: 50px; display: flex; flex-wrap: wrap; gap: 8px; background: #f8f9fa; border-radius: 10px; padding: 8px; }
         .user-chip { position: relative; padding: 10px 18px; background: white; border: 1px solid #b3e5fc; border-radius: 25px; font-weight: bold; font-size: 18px; color: #0277bd; cursor: grab; }
-        .del-btn { position: absolute; top: -5px; right: -5px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; display: none; }
+        
+        /* 削除ボタン（名前） */
+        .del-btn { position: absolute; top: -10px; right: -10px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; font-weight: bold; display: none; z-index: 10; cursor: pointer; }
         .user-chip.show-del .del-btn { display: block; }
-        .action-btn { background: #4fc3f7; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; font-size: 18px; margin: 10px 0; border-bottom: 4px solid #0288d1; cursor: pointer; }
-        .save-btn { background: var(--accent-red); border-bottom-color: #c62828; display: none; }
+
+        .action-btn { background: #4fc3f7; color: white; border: none; padding: 15px; border-radius: 12px; font-weight: bold; width: 100%; font-size: 18px; margin: 10px 0; border-bottom: 4px solid #0288d1; }
+        .save-btn { background: var(--accent-red); border-bottom-color: #c62828; display: none; margin-top: 20px; }
         .save-btn.ready { display: block; }
-        .history-item { border-bottom: 1px solid #eee; padding: 10px; }
-        .history-content { display: none; margin-top: 5px; color: #666; line-height: 1.6; }
+        
+        /* 履歴スタイル */
+        .history-item { position: relative; border-bottom: 1px solid #eee; padding: 15px; background: #fff; margin-bottom: 5px; border-radius: 10px; cursor: pointer; }
+        .history-content { display: none; margin-top: 10px; color: #444; font-size: 16px; line-height: 1.6; }
         .history-item.open .history-content { display: block; }
-        textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; }
+        .del-day-btn { position: absolute; top: 12px; right: 12px; background: #f44336; color: white; border: none; border-radius: 5px; padding: 5px 10px; font-size: 12px; cursor: pointer; }
+        
+        textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; }
         .staff-only { display: none; } .is-staff .staff-only { display: block; }
     </style>
 </head>
@@ -71,12 +71,14 @@
 
 <div id="main-content" style="display:none;">
     <div class="main-board-title">🧹 掃除当番ボード</div>
-    <button class="mode-switch" onclick="toggleStaffMode()" id="modeLabel">🔓 スタッフ用</button>
-    <nav id="staffNav">
+    <button class="mode-switch no-print" onclick="toggleStaffMode()" id="modeLabel">🔓 スタッフ用</button>
+    
+    <nav id="staffNav" class="no-print">
         <button onclick="showPage('historyPage')" id="btn-history">📝 履歴</button>
         <button onclick="showPage('mainPage')" id="btn-main" class="active-nav">🏠 当番表</button>
         <button onclick="showPage('setupPage')" id="btn-setup">⚙️ 設定</button>
     </nav>
+
     <div class="container">
         <div id="mainPage" class="page active">
             <div class="staff-only">
@@ -97,11 +99,10 @@
         </div>
 
         <div id="historyPage" class="page">
-            <div style="display:flex; justify-content: space-between; align-items: center;">
-                <h2 style="margin:0;">📝 履歴（直近5日分印刷可）</h2>
-                <button class="no-print" onclick="window.print()" style="padding:8px 15px; background:#4caf50; color:white; border:none; border-radius:5px; cursor:pointer;">🖨️ 印刷する</button>
+            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:10px;">
+                <h2 style="margin:0;">📝 掃除の履歴</h2>
+                <button class="no-print" onclick="window.print()" style="padding:10px 20px; background:#4caf50; color:white; border:none; border-radius:10px; cursor:pointer; font-weight:bold;">🖨️ 履歴(5日分)を印刷</button>
             </div>
-            <p class="no-print" style="font-size:12px; color:#666;">※クリックで詳細が開閉します。印刷時は自動で5日分展開されます。</p>
             <div id="historyContainer"></div>
         </div>
 
@@ -109,17 +110,17 @@
             <h2>⚙️ 設定</h2>
             <p>スタッフPW: <input type="password" id="staff-pw-input" class="auth-input" style="width:100px; padding:5px;"></p>
             <p>入室合言葉: <input type="password" id="entry-pw-input" class="auth-input" style="width:100px; padding:5px;"></p>
-            <p>利用者(名前!NG ♢男 ♦女):</p><textarea id="memberInput" style="height:100px;"></textarea>
-            <p>基本エリア:</p><textarea id="spotInput" style="height:60px;"></textarea>
-            <p>お助けエリア:</p><textarea id="helperInput" style="height:60px;"></textarea>
+            <p>利用者(名前!NG ♢男 ♦女):</p><textarea id="memberInput" style="height:120px;"></textarea>
+            <p>基本エリア:</p><textarea id="spotInput" style="height:80px;"></textarea>
+            <p>お助けエリア:</p><textarea id="helperInput" style="height:80px;"></textarea>
             <button class="action-btn" onclick="saveSettings()">設定を保存して更新</button>
         </div>
     </div>
 </div>
 
 <script>
-let isStaff = false; let draggedElement = null; let dragGhost = null; const INITIAL_PW = "8277";
-const DB = "v39_app_data_";
+let isStaff = false; let draggedElement = null; const INITIAL_PW = "8277";
+const DB = "vFinal_Revised_";
 
 window.onload = function() {
     if (localStorage.getItem(DB + 'logged') === 'true') {
@@ -154,16 +155,11 @@ function createChip(id, fullName, isHelper = false) {
     const chip = document.createElement('div'); chip.className = "user-chip"; chip.id = id;
     chip.innerText = fullName.split(/[!♢♦]/)[0]; chip.dataset.full = fullName; chip.dataset.isHelper = isHelper;
     chip.draggable = true;
-    chip.ondragstart = (e) => { draggedElement = chip; chip.classList.add('dragging'); };
-    chip.addEventListener('touchstart', (e) => {
-        draggedElement = chip; 
-        dragGhost = chip.cloneNode(true); dragGhost.style.position = 'fixed'; dragGhost.style.opacity = '0.8'; dragGhost.style.zIndex = '10000'; dragGhost.style.pointerEvents = 'none';
-        document.body.appendChild(dragGhost);
-    }, {passive: true});
-    chip.addEventListener('touchmove', (e) => { if(dragGhost) { dragGhost.style.left = e.touches[0].clientX+'px'; dragGhost.style.top = e.touches[0].clientY+'px'; } }, {passive: true});
+    chip.ondragstart = (e) => { draggedElement = chip; };
+    chip.addEventListener('touchstart', (e) => { draggedElement = chip; }, {passive: true});
     chip.addEventListener('touchend', (e) => {
-        if (dragGhost) { dragGhost.remove(); dragGhost = null; }
-        const zone = document.elementFromPoint(e.changedTouches[0].clientX, e.changedTouches[0].clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
+        const touch = e.changedTouches[0];
+        const zone = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
         if (zone) handleMove(draggedElement, zone); draggedElement = null;
     });
     chip.onclick = (e) => { e.stopPropagation(); clearAllDels(); chip.classList.add('show-del'); };
@@ -215,16 +211,27 @@ function manualSave() {
     });
     localStorage.setItem(DB+'last_loc', JSON.stringify(current));
     const logs = JSON.parse(localStorage.getItem(DB+'logs') || "[]");
-    const d = new Date(); logs.unshift({ date: `${d.getMonth()+1}/${d.getDate()}(${["日","月","火","水","木","金","土"][d.getDay()]})`, detail: data.join(' / ') });
-    localStorage.setItem(DB+'logs', JSON.stringify(logs));
+    const d = new Date(); 
+    logs.unshift({ id: Date.now(), date: `${d.getMonth()+1}/${d.getDate()}(${["日","月","火","水","木","金","土"][d.getDay()]})`, detail: data.join(' / ') });
+    localStorage.setItem(DB+'logs', JSON.stringify(logs.slice(0, 50)));
     alert("保存しました！");
+}
+
+function deleteDay(id, e) {
+    e.stopPropagation();
+    if (!confirm("この日の履歴を削除しますか？")) return;
+    let logs = JSON.parse(localStorage.getItem(DB+'logs') || "[]");
+    logs = logs.filter(l => l.id !== id);
+    localStorage.setItem(DB+'logs', JSON.stringify(logs));
+    renderHistory();
 }
 
 function renderHistory() {
     const logs = JSON.parse(localStorage.getItem(DB+'logs') || "[]");
     document.getElementById('historyContainer').innerHTML = logs.map((l, i) => `
         <div class="history-item ${i===0?'open':''}" onclick="this.classList.toggle('open')">
-            <b>${l.date}</b>
+            <b>📅 ${l.date}</b>
+            <button class="del-day-btn no-print" onclick="deleteDay(${l.id}, event)">削除</button>
             <div class="history-content">${l.detail}</div>
         </div>`).join('');
 }
@@ -235,23 +242,28 @@ function saveSettings() {
     localStorage.setItem(DB+'h', document.getElementById('helperInput').value);
     localStorage.setItem(DB+'staff_pw', document.getElementById('staff-pw-input').value);
     localStorage.setItem(DB+'entry_pw', document.getElementById('entry-pw-input').value);
+    localStorage.removeItem(DB+'layout');
     location.reload();
 }
 
 function saveLayout() {
-    const chips = []; document.querySelectorAll('.user-chip').forEach(c => chips.push({id:c.id, full:c.dataset.full, isH:c.dataset.isHelper, zone:c.parentElement.id || c.parentElement.closest('.spot-row').dataset.rowId}));
+    const chips = []; document.querySelectorAll('.user-chip').forEach(c => {
+        if (!c.id.startsWith('h-')) {
+            chips.push({id:c.id, full:c.dataset.full, zone:c.parentElement.id || c.parentElement.closest('.spot-row').dataset.rowId});
+        }
+    });
     localStorage.setItem(DB+'layout', JSON.stringify(chips));
 }
 
 function loadLayout() {
     const data = JSON.parse(localStorage.getItem(DB+'layout') || "[]");
+    const m = document.getElementById('memberInput').value;
     if (!data.length) { 
-        const m = document.getElementById('memberInput').value;
         m.split('\n').filter(n=>n.trim()).forEach((n,i)=>document.getElementById('shufflePool').appendChild(createChip("u-"+i, n)));
         return;
     }
     data.forEach(d => {
-        const c = createChip(d.id, d.full, d.isH==="true");
+        const c = createChip(d.id, d.full);
         const z = d.zone.includes('-') ? document.querySelector(`[data-row-id="${d.zone}"] .drop-zone`) : document.getElementById(d.zone);
         if (z) z.appendChild(c);
     });
@@ -266,7 +278,7 @@ function checkStatus() {
 function showPage(p) { 
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.getElementById(p).classList.add('active');
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
-    document.getElementById('btn-'+p.replace('Page','')).classList.add('active-nav');
+    const btn = document.getElementById('btn-'+p.replace('Page','')); if(btn) btn.classList.add('active-nav');
     if(p==='historyPage') renderHistory();
 }
 
@@ -275,7 +287,7 @@ function toggleStaffMode() {
     else { isStaff=false; document.body.classList.remove('is-staff'); document.getElementById('staffNav').classList.remove('staff-visible'); showPage('mainPage'); }
 }
 
-function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem(DB+'entry_pw')||INITIAL_PW)) { localStorage.setItem(DB+'logged','true'); location.reload(); } else alert("NG"); }
+function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem(DB+'entry_pw')||INITIAL_PW)) { localStorage.setItem(DB+'logged','true'); location.reload(); } else alert("合言葉が違います"); }
 function clearAllDels() { document.querySelectorAll('.user-chip').forEach(c => c.classList.remove('show-del')); }
 function resetToShufflePool() { document.querySelectorAll('.drop-zone .user-chip').forEach(c => { if(c.dataset.isHelper==="true") c.remove(); else document.getElementById('shufflePool').appendChild(c); }); saveLayout(); checkStatus(); }
 </script>
