@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>掃除管理システム・完全版</title>
+    <title>掃除管理システム・確定版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; --hover-blue: #e1f5fe; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 50px; color: #333; touch-action: manipulation; }
-        
         #auth-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--deep-blue); color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
         .auth-box { background: white; padding: 30px; border-radius: 20px; color: #333; text-align: center; width: 85%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
         .auth-input { width: 90%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; text-align: center; }
         .main-board-title { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); color: white; text-align: center; padding: 25px 10px; font-size: 32px; font-weight: 900; }
-        
         .container { background: white; max-width: 1000px; margin: 15px auto; padding: 20px; border-radius: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
         nav { display: none; justify-content: space-around; background: #263238; padding: 12px 0; position: sticky; top: 0; z-index: 100; }
         nav.staff-visible { display: flex; }
@@ -20,7 +18,6 @@
         nav button.active-nav { background: var(--primary-blue); }
         .mode-switch { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 15px; border-radius: 25px; font-size: 13px; z-index: 1000; cursor: pointer; }
         .page { display: none; } .page.active { display: block; }
-
         .section-title { background: #f0f7ff; color: var(--deep-blue); padding: 12px 18px; border-left: 6px solid var(--primary-blue); border-radius: 6px; font-weight: bold; margin: 25px 0 10px; }
         .member-zone, .shuffle-zone { background:#fafafa; padding:15px; border:2px dashed #cfd8dc; border-radius:20px; min-height:80px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; }
         .shuffle-zone { background:#fff9c4; border:2px solid #fbc02d; }
@@ -29,20 +26,15 @@
         .spot-row.done { background-color: #e8f5e9; border-color: #a5d6a7; }
         input[type="checkbox"] { width: 35px; height: 35px; margin-right: 15px; flex-shrink: 0; }
         .spot-info { width: 110px; font-weight: bold; color: var(--deep-blue); font-size: 18px; }
-        
         .drop-zone { flex-grow: 1; min-height: 60px; display: flex; flex-wrap: wrap; gap: 10px; background: #f8f9fa; border-radius: 12px; padding: 10px; border: 2px solid transparent; transition: 0.2s; }
         .drop-zone.drag-over { background: var(--hover-blue); border-color: var(--primary-blue); transform: scale(1.02); }
-
         .user-chip { position: relative; padding: 14px 24px; background: white; border: 1.5px solid #b3e5fc; border-radius: 30px; font-weight: bold; font-size: 20px; color: #0277bd; touch-action: none; white-space: nowrap; cursor: grab; user-select: none; box-shadow: 0 3px 6px rgba(0,0,0,0.1); }
         .user-chip.dragging { opacity: 0.3; transform: scale(1.1); z-index: 1000; }
         .del-btn { position: absolute; top: -8px; right: -8px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 28px; height: 28px; display: none; }
         .user-chip.show-del .del-btn { display: block; }
-
         .action-btn { background: #4fc3f7; color: white; border: none; padding: 18px; border-radius: 15px; font-weight: bold; width: 100%; font-size: 20px; margin: 10px 0; border-bottom: 5px solid #0288d1; cursor: pointer; }
-        /* 保存ボタンは最初は隠しておき、readyクラスがついたら表示 */
         .save-btn { background: var(--accent-red); border-bottom-color: #c62828; display: none; margin-top: 30px; }
         .save-btn.ready { display: block; }
-
         textarea { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #ddd; font-size: 16px; margin-bottom: 15px; box-sizing: border-box; }
         .staff-only { display: none; } .is-staff .staff-only { display: block; }
     </style>
@@ -77,21 +69,16 @@
                 <div class="section-title">👥 待機・欠席メンバー</div>
                 <div id="memberPool" class="member-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>
             </div>
-            
             <div class="section-title">📍 今日の掃除エリア</div>
             <div id="spotsList" class="spots-grid"></div>
-            
             <div class="section-title">🏃 お助けエリア</div>
             <div id="helperList" class="spots-grid"></div>
-
             <button id="saveBtn" class="action-btn save-btn" onclick="manualSave()">✅ 今日の記録を保存</button>
         </div>
-
         <div id="historyPage" class="page">
             <h2 style="margin:0;">📝 履歴</h2>
             <div id="historyContainer"></div>
         </div>
-
         <div id="setupPage" class="page">
             <h2>⚙️ 設定</h2>
             <p>スタッフPW: <input type="password" id="staff-pw-input" class="auth-input" style="width:100px; padding:5px;"></p>
@@ -105,17 +92,13 @@
 </div>
 
 <script>
-let isStaff = false;
-let draggedElement = null;
-let dragGhost = null;
-const INITIAL_PW = "8277";
+let isStaff = false; let draggedElement = null; let dragGhost = null; const INITIAL_PW = "8277";
 
 window.onload = function() {
     if (localStorage.getItem('v37_is_logged_in') === 'true') {
         document.getElementById('auth-overlay').style.display = 'none';
         document.getElementById('main-content').style.display = 'block';
-        initBoard();
-        loadLayout();
+        initBoard(); loadLayout();
     }
 };
 
@@ -123,10 +106,7 @@ function initBoard() {
     const m = localStorage.getItem('v37_m') || "利用者A♢\n利用者B♦";
     const s = localStorage.getItem('v37_s') || "女子トイレ\n男子トイレ\nフロア";
     const h = localStorage.getItem('v37_h') || "窓拭き";
-    
-    document.getElementById('memberInput').value = m;
-    document.getElementById('spotInput').value = s;
-    document.getElementById('helperInput').value = h;
+    document.getElementById('memberInput').value = m; document.getElementById('spotInput').value = s; document.getElementById('helperInput').value = h;
     document.getElementById('staff-pw-input').value = localStorage.getItem('v37_staff_pw') || INITIAL_PW;
     document.getElementById('entry-pw-input').value = localStorage.getItem('v37_entry_pw') || INITIAL_PW;
 
@@ -134,8 +114,7 @@ function initBoard() {
         const target = document.getElementById(id); target.innerHTML = "";
         txt.split('\n').filter(n => n.trim()).forEach((name, idx) => {
             const row = document.createElement('div');
-            row.className = "spot-row";
-            row.dataset.rowId = id + "-" + idx;
+            row.className = "spot-row"; row.dataset.rowId = id + "-" + idx;
             row.innerHTML = `<input type="checkbox" onchange="saveLayout(); checkStatus();"><div class="spot-info">${name}</div><div class="drop-zone" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)"></div>`;
             target.appendChild(row);
         });
@@ -147,75 +126,61 @@ function createChip(id, fullName, isHelper = false) {
     const chip = document.createElement('div');
     chip.className = "user-chip"; chip.id = id; chip.innerText = fullName.split(/[!♢♦]/)[0];
     chip.dataset.full = fullName; chip.dataset.isHelper = isHelper;
-    
     chip.draggable = true;
     chip.ondragstart = (e) => { draggedElement = chip; chip.classList.add('dragging'); };
     chip.ondragend = () => chip.classList.remove('dragging');
-
     chip.addEventListener('touchstart', (e) => {
-        draggedElement = chip;
-        chip.classList.add('dragging');
-        dragGhost = chip.cloneNode(true);
-        dragGhost.style.position = 'fixed'; dragGhost.style.opacity = '0.8'; dragGhost.style.zIndex = '10000'; dragGhost.style.pointerEvents = 'none';
-        document.body.appendChild(dragGhost);
-        updateGhostPos(e.touches[0]);
+        draggedElement = chip; chip.classList.add('dragging');
+        dragGhost = chip.cloneNode(true); dragGhost.style.position = 'fixed'; dragGhost.style.opacity = '0.8'; dragGhost.style.zIndex = '10000'; dragGhost.style.pointerEvents = 'none';
+        document.body.appendChild(dragGhost); updateGhostPos(e.touches[0]);
     }, {passive: true});
-
     chip.addEventListener('touchmove', (e) => {
-        if (!draggedElement) return;
-        updateGhostPos(e.touches[0]);
-        const touch = e.touches[0];
-        document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(z => z.classList.remove('drag-over'));
+        if (!draggedElement) return; updateGhostPos(e.touches[0]);
+        const touch = e.touches[0]; document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(z => z.classList.remove('drag-over'));
         const zone = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
         if (zone) zone.classList.add('drag-over');
     }, {passive: false});
-
     chip.addEventListener('touchend', (e) => {
-        if (!draggedElement) return;
-        if (dragGhost) { dragGhost.remove(); dragGhost = null; }
-        chip.classList.remove('dragging');
-        document.querySelectorAll('.drag-over').forEach(z => z.classList.remove('drag-over'));
-        const t = e.changedTouches[0];
-        const zone = document.elementFromPoint(t.clientX, t.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
-        if (zone) handleMove(chip, zone);
-        draggedElement = null;
+        if (!draggedElement) return; if (dragGhost) { dragGhost.remove(); dragGhost = null; }
+        chip.classList.remove('dragging'); document.querySelectorAll('.drag-over').forEach(z => z.classList.remove('drag-over'));
+        const t = e.changedTouches[0]; const zone = document.elementFromPoint(t.clientX, t.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
+        if (zone) handleMove(chip, zone); draggedElement = null;
     });
-
     chip.onclick = (e) => { e.stopPropagation(); if (chip.parentElement.closest('.spot-row')) { clearAllDels(); chip.classList.add('show-del'); } };
-    const del = document.createElement('button');
-    del.className = "del-btn"; del.innerText = "×";
+    const del = document.createElement('button'); del.className = "del-btn"; del.innerText = "×";
     del.onclick = (e) => { e.stopPropagation(); if (chip.dataset.isHelper === "true") chip.remove(); else document.getElementById('shufflePool').appendChild(chip); saveLayout(); checkStatus(); };
     chip.appendChild(del);
     return chip;
 }
 
-function updateGhostPos(touch) { if (dragGhost) { dragGhost.style.left = (touch.clientX - 50) + 'px'; dragGhost.style.top = (touch.clientY - 25) + 'px'; } }
+function updateGhostPos(t) { if (dragGhost) { dragGhost.style.left = (t.clientX - 50) + 'px'; dragGhost.style.top = (t.clientY - 25) + 'px'; } }
 function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
 function handleDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
 function handleDrop(e) { e.preventDefault(); e.currentTarget.classList.remove('drag-over'); if (draggedElement) handleMove(draggedElement, e.currentTarget); }
 
-function handleMove(chip, zone) {
-    const fromHelper = chip.closest('#helperList') !== null;
-    const toMain = zone.closest('#spotsList') !== null;
-    const toStaffZones = zone.closest('.member-zone, .shuffle-zone') !== null;
-
-    if (!isStaff) {
-        if (fromHelper && toMain) { alert("お助けエリアからは戻せません。"); return; }
-        if (toStaffZones) { alert("そこには移動できません。"); return; }
+function checkConstraint(fullName, spotName) {
+    if (fullName.includes('!')) {
+        const ngPart = fullName.split('!')[1].split(/[♢♦]/)[0].trim();
+        if (spotName.includes(ngPart)) return false;
     }
+    if (spotName.includes("女子トイレ") && fullName.includes('♢')) return false;
+    if (spotName.includes("男子トイレ") && fullName.includes('♦')) return false;
+    return true;
+}
+
+function handleMove(chip, zone) {
+    const fromHelper = chip.dataset.isHelper === "true";
+    const toMain = zone.closest('#spotsList') !== null;
+    const toHelper = zone.closest('#helperList') !== null;
+
+    if (fromHelper && toMain) { alert("お助けエリアからは戻せません。"); return; }
     
     const fullName = chip.dataset.full;
     const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
+    if (!checkConstraint(fullName, spotName)) { alert("NGな場所または性別制限です"); return; }
 
-    if (fullName.includes('!')) {
-        const ngPart = fullName.split('!')[1].split(/[♢♦]/)[0].trim();
-        if (spotName.includes(ngPart)) { alert(ngPart + "はNGです"); return; }
-    }
-    // 男性＝♢、女性＝♦
-    if (spotName.includes("女子トイレ") && fullName.includes('♢')) { alert("男性(♢)は入れません"); return; }
-    if (spotName.includes("男子トイレ") && fullName.includes('♦')) { alert("女性(♦)は入れません"); return; }
-
-    if (zone.closest('#helperList') && !chip.dataset.isHelper) {
+    if (toHelper) {
+        // コピー作成
         zone.appendChild(createChip("h-" + Date.now(), fullName, true));
     } else {
         zone.appendChild(chip);
@@ -234,59 +199,42 @@ function saveLayout() {
 }
 
 function loadLayout() {
-    const data = localStorage.getItem('v37_current_layout');
-    if (!data) { resetChipsToPool(); return; }
-    const layout = JSON.parse(data);
-    document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(z => z.innerHTML = "");
+    const data = localStorage.getItem('v37_current_layout'); if (!data) { resetChipsToPool(); return; }
+    const layout = JSON.parse(data); document.querySelectorAll('.drop-zone, .member-zone, .shuffle-zone').forEach(z => z.innerHTML = "");
     layout.chips.forEach(c => {
         const chip = createChip(c.id, c.full, c.isH === "true");
         const zone = (c.zone.includes('-')) ? document.querySelector(`[data-row-id="${c.zone}"] .drop-zone`) : document.getElementById(c.zone);
         if (zone) zone.appendChild(chip);
     });
-    Object.keys(layout.checks).forEach(rowId => {
-        const row = document.querySelector(`[data-row-id="${rowId}"]`);
-        if (row) row.querySelector('input').checked = layout.checks[rowId];
-    });
+    Object.keys(layout.checks).forEach(rowId => { const row = document.querySelector(`[data-row-id="${rowId}"]`); if (row) row.querySelector('input').checked = layout.checks[rowId]; });
     checkStatus();
 }
 
 function resetChipsToPool() {
-    const m = localStorage.getItem('v37_m') || "";
-    const pool = document.getElementById('shufflePool'); pool.innerHTML = "";
+    const m = localStorage.getItem('v37_m') || ""; const pool = document.getElementById('shufflePool'); pool.innerHTML = "";
     m.split('\n').filter(n => n.trim()).forEach((n, i) => pool.appendChild(createChip("u-"+i, n)));
 }
 
 function checkStatus() {
     let allReady = true; let hasAnyChip = false;
-    document.querySelectorAll('.spot-row').forEach(row => {
-        const hasMember = row.querySelector('.user-chip') !== null;
-        const cb = row.querySelector('input');
-        if (hasMember) {
-            hasAnyChip = true; row.classList.add('done');
-            if (!cb.checked) allReady = false;
-        } else {
-            row.classList.remove('done');
-        }
+    document.querySelectorAll('#spotsList .spot-row, #helperList .spot-row').forEach(row => {
+        const hasMember = row.querySelector('.user-chip') !== null; const cb = row.querySelector('input');
+        if (hasMember) { hasAnyChip = true; row.classList.add('done'); if (!cb.checked) allReady = false; } else { row.classList.remove('done'); }
     });
-    const btn = document.getElementById('saveBtn');
-    if (hasAnyChip && allReady) btn.classList.add('ready'); else btn.classList.remove('ready');
+    const btn = document.getElementById('saveBtn'); if (hasAnyChip && allReady) btn.classList.add('ready'); else btn.classList.remove('ready');
 }
 
 function manualSave() {
-    let data = [];
-    document.querySelectorAll('.spot-row').forEach(row => {
+    let data = []; document.querySelectorAll('.spot-row').forEach(row => {
         const names = Array.from(row.querySelectorAll('.user-chip')).map(c => c.innerText);
         if (names.length > 0) data.push(`<b>${row.querySelector('.spot-info').innerText}</b>: ${names.join('＆')}`);
     });
-    const now = new Date();
-    const dateStr = (now.getMonth() + 1) + "/" + now.getDate() + "(" + ["日","月","火","水","木","金","土"][now.getDay()] + ")";
+    const now = new Date(); const dateStr = (now.getMonth() + 1) + "/" + now.getDate() + "(" + ["日","月","火","水","木","金","土"][now.getDay()] + ")";
     const logs = JSON.parse(localStorage.getItem('v37_logs') || "[]");
     logs.unshift({ month: now.getFullYear() + "年" + (now.getMonth() + 1) + "月", date: dateStr, details: data });
     localStorage.setItem('v37_logs', JSON.stringify(logs));
-    
-    document.querySelectorAll('input').forEach(i => i.checked = false);
-    saveLayout(); checkStatus();
-    alert("保存しました。");
+    document.querySelectorAll('input').forEach(i => i.checked = false); saveLayout(); checkStatus();
+    alert("記録を保存しました。");
 }
 
 function runShuffle() {
@@ -294,9 +242,17 @@ function runShuffle() {
     resetToShufflePool();
     const zones = Array.from(document.querySelectorAll('#spotsList .drop-zone'));
     const chips = Array.from(document.getElementById('shufflePool').children);
-    chips.sort(() => Math.random() - 0.5).forEach(chip => {
-        const target = zones.find(z => z.children.length === 0);
-        if (target) target.appendChild(chip);
+    
+    // 1人ずつ、NGを考慮して配置
+    const shuffledChips = chips.sort(() => Math.random() - 0.5);
+    shuffledChips.forEach(chip => {
+        const fullName = chip.dataset.full;
+        // その人が入れる（空いている）ゾーンを探す
+        const validZone = zones.find(z => {
+            const spotName = z.closest('.spot-row').querySelector('.spot-info').innerText;
+            return z.children.length === 0 && checkConstraint(fullName, spotName);
+        });
+        if (validZone) validZone.appendChild(chip);
     });
     saveLayout(); checkStatus();
 }
@@ -305,8 +261,7 @@ function resetToShufflePool() {
     document.querySelectorAll('.drop-zone .user-chip, #memberPool .user-chip').forEach(c => {
         if (c.dataset.isHelper === "true") c.remove(); else document.getElementById('shufflePool').appendChild(c);
     });
-    document.querySelectorAll('input').forEach(i => i.checked = false);
-    saveLayout(); checkStatus();
+    document.querySelectorAll('input').forEach(i => i.checked = false); saveLayout(); checkStatus();
 }
 
 function saveSettings() {
@@ -315,9 +270,7 @@ function saveSettings() {
     localStorage.setItem('v37_h', document.getElementById('helperInput').value);
     localStorage.setItem('v37_staff_pw', document.getElementById('staff-pw-input').value);
     localStorage.setItem('v37_entry_pw', document.getElementById('entry-pw-input').value);
-    localStorage.removeItem('v37_current_layout');
-    initBoard(); resetChipsToPool();
-    alert("設定を保存しました。");
+    localStorage.removeItem('v37_current_layout'); initBoard(); resetChipsToPool(); alert("設定を保存しました。");
 }
 
 function toggleStaffMode() {
