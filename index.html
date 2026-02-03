@@ -6,7 +6,7 @@
     <title>掃除管理システム・完全版</title>
     <style>
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; --staff-orange: #ff9800; --hover-blue: #e3f2fd; }
-        body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 80px; color: #333; }
+        body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 80px; color: #333; overflow-x: hidden; }
         
         @media print {
             nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, #setupPage, #mainPage, #modeLabel, .no-print, .main-board-title, .del-day-btn { display: none !important; }
@@ -22,7 +22,6 @@
         
         .main-board-title { background: linear-gradient(135deg, #0288d1 0%, #01579b 100%); color: white; text-align: center; padding: 18px; font-size: 24px; font-weight: bold; }
         
-        /* 💡 メニューが一番上にくるように修正 */
         nav { display: none; justify-content: space-around; background: #263238; padding: 12px 0; position: sticky; top: 0; z-index: 2000; }
         nav.staff-visible { display: flex; }
         nav button { background: #455a64; border: none; color: white; padding: 14px; border-radius: 8px; flex: 1; margin: 0 6px; cursor: pointer; font-size: 16px; font-weight: bold; }
@@ -45,8 +44,11 @@
         .member-zone, .shuffle-zone { background:#fafafa; padding:18px; border:3px dashed #cfd8dc; border-radius:18px; min-height:100px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; transition: background 0.3s; }
         .shuffle-zone { background:#fff9c4; border:3px solid #fbc02d; }
         
-        /* 💡 z-indexをメニュー(2000)より低く設定 */
-        .user-chip { position: relative; padding: 14px 24px; background: white; border: 2px solid #b3e5fc; border-radius: 40px; font-weight: bold; font-size: 20px; color: #0277bd; cursor: grab; box-shadow: 0 4px 8px rgba(0,0,0,0.12); z-index: 100; touch-action: none; }
+        .user-chip { position: relative; padding: 14px 24px; background: white; border: 2px solid #b3e5fc; border-radius: 40px; font-weight: bold; font-size: 20px; color: #0277bd; cursor: grab; box-shadow: 0 4px 8px rgba(0,0,0,0.12); z-index: 100; touch-action: none; transition: transform 0.1s, opacity 0.1s; }
+        
+        /* 💡 ドラッグ中のチップ用スタイル */
+        .user-chip.dragging { position: fixed !important; opacity: 0.7; z-index: 3000; pointer-events: none; transform: scale(1.1); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+
         .del-btn { position: absolute; top: -14px; right: -14px; background: var(--accent-red); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-weight: bold; display: none; z-index: 101; cursor: pointer; font-size: 20px; line-height: 36px; text-align: center; }
         .user-chip.show-del .del-btn { display: block; }
 
@@ -127,6 +129,7 @@
 <script>
 let isStaff = false; let draggedElement = null; const INITIAL_PW = "8277"; const DB = "SOJI_DATA_STABLE"; 
 let scrollInterval = null;
+let offset = { x: 0, y: 0 };
 
 window.onload = function() {
     if (localStorage.getItem(DB + '_logged') === 'true') {
@@ -164,25 +167,43 @@ function createChip(id, fullName, isHelper = false) {
     
     chip.ondragstart = (e) => { draggedElement = chip; };
     
-    chip.addEventListener('touchstart', (e) => { draggedElement = chip; }, {passive: true});
+    // iPad・タッチ操作
+    chip.addEventListener('touchstart', (e) => { 
+        draggedElement = chip; 
+        const touch = e.touches[0];
+        const rect = chip.getBoundingClientRect();
+        offset.x = touch.clientX - rect.left;
+        offset.y = touch.clientY - rect.top;
+        chip.classList.add('dragging');
+    }, {passive: false});
 
     chip.addEventListener('touchmove', (e) => {
+        if (!draggedElement) return;
+        e.preventDefault();
         const touch = e.touches[0];
         const x = touch.clientX; const y = touch.clientY;
+        
+        // 💡 チップを指の位置に追従させる
+        chip.style.left = (x - offset.x) + 'px';
+        chip.style.top = (y - offset.y) + 'px';
+
         const zone = document.elementFromPoint(x, y)?.closest('.drop-zone, .member-zone, .shuffle-zone');
         
-        // 💡 オートスクロール処理 (iPad対策)
+        // オートスクロール
         clearInterval(scrollInterval);
-        if (y < 100) scrollInterval = setInterval(() => window.scrollBy(0, -10), 20);
-        else if (y > window.innerHeight - 100) scrollInterval = setInterval(() => window.scrollBy(0, 10), 20);
+        if (y < 80) scrollInterval = setInterval(() => window.scrollBy(0, -10), 20);
+        else if (y > window.innerHeight - 80) scrollInterval = setInterval(() => window.scrollBy(0, 10), 20);
 
         document.querySelectorAll('.spot-row, .member-zone, .shuffle-zone').forEach(el => el.classList.remove('drag-over'));
         if (zone) (zone.closest('.spot-row') || zone).classList.add('drag-over');
-    }, {passive: true});
+    }, {passive: false});
 
     chip.addEventListener('touchend', (e) => {
         clearInterval(scrollInterval);
         const touch = e.changedTouches[0];
+        chip.classList.remove('dragging');
+        chip.style.left = ''; chip.style.top = ''; // 位置をリセット
+        
         const zone = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
         document.querySelectorAll('.spot-row, .member-zone, .shuffle-zone').forEach(el => el.classList.remove('drag-over'));
         if (zone) handleMove(draggedElement, zone); 
