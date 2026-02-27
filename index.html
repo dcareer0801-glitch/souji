@@ -8,11 +8,21 @@
         :root { --primary-blue: #0288d1; --deep-blue: #01579b; --bg-color: #f0f4f8; --accent-red: #ef5350; --staff-orange: #ff9800; --hover-blue: #e3f2fd; }
         body { font-family: 'Hiragino Kaku Gothic ProN', sans-serif; background: var(--bg-color); margin: 0; padding-bottom: 80px; color: #333; overflow-x: hidden; }
         
+        /* 🖨️ 印刷設定: 1ヶ月がA4・2枚（両面1枚）に収まるよう調整 */
         @media print {
-            nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, #setupPage, #mainPage, #modeLabel, .no-print, .main-board-title, .del-day-btn { display: none !important; }
-            #historyPage { display: block !important; width: 100%; }
-            .history-item { display: block !important; border: 2px solid #000; margin-bottom: 10px; padding: 15px; page-break-inside: avoid; }
-            .history-content { display: block !important; font-size: 16px; color: #000; }
+            nav, .mode-switch, .action-btn, .save-btn, #auth-overlay, .staff-only, #setupPage, #mainPage, #modeLabel, .no-print, .main-board-title, .del-day-btn, .history-filter-area { display: none !important; }
+            #historyPage { display: block !important; width: 100%; margin: 0; padding: 0; }
+            .history-item { 
+                display: block !important; 
+                border: 1px solid #ccc; 
+                margin-bottom: 8px; 
+                padding: 12px; 
+                page-break-inside: avoid; 
+                font-size: 14px; /* 30日分を収めるためのサイズ */
+            }
+            .history-content { font-size: 15px; color: #000; font-weight: bold; }
+            body { background: white; }
+            .container { max-width: 100%; margin: 0; padding: 0; }
         }
 
         input[type="checkbox"] { width: 34px; height: 34px; cursor: pointer; margin-right: 12px; flex-shrink: 0; }
@@ -45,7 +55,6 @@
         .shuffle-zone { background:#fff9c4; border:3px solid #fbc02d; }
         
         .user-chip { position: relative; padding: 14px 24px; background: white; border: 2px solid #b3e5fc; border-radius: 40px; font-weight: bold; font-size: 20px; color: #0277bd; cursor: grab; box-shadow: 0 4px 8px rgba(0,0,0,0.12); z-index: 100; touch-action: none; transition: transform 0.1s, opacity 0.1s; }
-        
         .user-chip.dragging { position: fixed !important; opacity: 0.8; z-index: 3000; pointer-events: none !important; transform: scale(1.05); box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
 
         .del-btn { position: absolute; top: -18px; right: -18px; background: var(--accent-red); color: white; border: 3px solid white; border-radius: 50%; width: 44px; height: 44px; font-weight: bold; display: none; z-index: 200; cursor: pointer; font-size: 24px; line-height: 38px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
@@ -55,6 +64,9 @@
         .save-btn { background: var(--accent-red); border-bottom-color: #c62828; display: none; margin-top: 25px; min-height: 85px; }
         .save-btn.visible { display: block; }
         .del-day-btn { background: #ff5252; color: white; border: none; border-radius: 8px; padding: 5px 12px; cursor: pointer; font-size: 14px; font-weight: bold; }
+
+        .history-filter-area { background: #f5f5f5; padding: 15px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .month-select { padding: 12px; border-radius: 8px; border: 2px solid var(--primary-blue); font-size: 16px; font-weight: bold; flex-grow: 1; }
 
         .auth-input { width: 100%; padding: 15px; border: 2px solid #ddd; border-radius: 10px; font-size: 20px; text-align: center; box-sizing: border-box; }
         textarea { width: 100%; padding: 18px; border-radius: 15px; border: 2.5px solid #ddd; font-size: 18px; box-sizing: border-box; }
@@ -104,9 +116,17 @@
         </div>
 
         <div id="historyPage" class="page">
-            <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:15px;">
-                <h2 style="margin:0;">📝 履歴</h2>
-                <button class="no-print" onclick="window.print()" style="padding:12px 25px; background:#4caf50; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; font-size:16px;">🖨️ 印刷画面</button>
+            <div class="no-print">
+                <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom:15px;">
+                    <h2 style="margin:0;">📝 履歴表示</h2>
+                    <button onclick="window.print()" style="padding:12px 25px; background:#4caf50; color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; font-size:16px;">🖨️ 印刷画面</button>
+                </div>
+                <div class="history-filter-area">
+                    <span>表示月:</span>
+                    <select id="monthFilter" class="month-select" onchange="renderHistory()">
+                        <option value="all">すべて表示</option>
+                    </select>
+                </div>
             </div>
             <div id="historyContainer"></div>
         </div>
@@ -165,7 +185,6 @@ function createChip(id, fullName, isHelper = false) {
     chip.innerText = fullName.split(/[!♢♦]/)[0]; chip.dataset.full = fullName; chip.dataset.isHelper = isHelper;
     chip.draggable = true;
     
-    // iPad・タッチ操作
     chip.addEventListener('touchstart', (e) => { 
         draggedElement = chip; 
         const touch = e.touches[0];
@@ -180,47 +199,34 @@ function createChip(id, fullName, isHelper = false) {
         if (!draggedElement) return;
         const touch = e.touches[0];
         const x = touch.clientX; const y = touch.clientY;
-
-        // 💡 5px以上動いたらドラッグ開始（判定を少し敏感に）
         if (!chip.classList.contains('dragging') && (Math.abs(x - startPos.x) > 5 || Math.abs(y - startPos.y) > 5)) {
             chip.classList.add('dragging');
             clearAllDels();
         }
-
         if (chip.classList.contains('dragging')) {
             e.preventDefault();
             chip.style.left = (x - offset.x) + 'px';
             chip.style.top = (y - offset.y) + 'px';
-
-            // 💡 判定を「指の位置」にして、枠に入りやすくする
             const zone = document.elementFromPoint(x, y)?.closest('.drop-zone, .member-zone, .shuffle-zone');
-            
             clearInterval(scrollInterval);
             if (y < 80) scrollInterval = setInterval(() => window.scrollBy(0, -15), 20);
             else if (y > window.innerHeight - 80) scrollInterval = setInterval(() => window.scrollBy(0, 15), 20);
-
             document.querySelectorAll('.spot-row, .member-zone, .shuffle-zone').forEach(el => el.classList.remove('drag-over'));
-            if (zone) {
-                const target = zone.closest('.spot-row') || zone;
-                target.classList.add('drag-over');
-            }
+            if (zone) (zone.closest('.spot-row') || zone).classList.add('drag-over');
         }
     }, {passive: false});
 
     chip.addEventListener('touchend', (e) => {
         clearInterval(scrollInterval);
         if (!draggedElement) return;
-
         if (chip.classList.contains('dragging')) {
             const touch = e.changedTouches[0];
             chip.classList.remove('dragging');
             chip.style.left = ''; chip.style.top = '';
-            
             const zone = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.drop-zone, .member-zone, .shuffle-zone');
             document.querySelectorAll('.spot-row, .member-zone, .shuffle-zone').forEach(el => el.classList.remove('drag-over'));
             if (zone) handleMove(draggedElement, zone); 
         } else {
-            // タップ操作：利用者モードでも×を表示
             e.preventDefault();
             const wasShowing = chip.classList.contains('show-del');
             clearAllDels();
@@ -229,7 +235,6 @@ function createChip(id, fullName, isHelper = false) {
         draggedElement = null;
     });
 
-    // PC用
     chip.onclick = (e) => { 
         e.stopPropagation(); 
         const wasShowing = chip.classList.contains('show-del');
@@ -239,15 +244,11 @@ function createChip(id, fullName, isHelper = false) {
 
     const del = document.createElement('button'); del.className = "del-btn"; del.innerText = "×";
     const deleteAction = (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (isHelper) chip.remove(); 
-        else document.getElementById('shufflePool').appendChild(chip); 
+        e.stopPropagation(); e.preventDefault();
+        if (isHelper) chip.remove(); else document.getElementById('shufflePool').appendChild(chip); 
         checkStatus(); saveLayout();
     };
-    del.onclick = deleteAction;
-    del.ontouchend = deleteAction;
-
+    del.onclick = deleteAction; del.ontouchend = deleteAction;
     chip.appendChild(del);
     return chip;
 }
@@ -256,10 +257,8 @@ function handleMove(chip, zone) {
     const spotName = zone.closest('.spot-row')?.querySelector('.spot-info')?.innerText || "";
     const isTargetHelperArea = zone.closest('#helperList') !== null;
     const isOriginHelperArea = chip.dataset.isHelper === "true";
-
     if (isOriginHelperArea && !isTargetHelperArea && !zone.classList.contains('member-zone') && !zone.classList.contains('shuffle-zone')) return; 
     if (spotName && !checkConstraint(chip.dataset.full, spotName)) { alert("制限エリアです"); return; }
-    
     if (isTargetHelperArea && !isOriginHelperArea) zone.appendChild(createChip("h-"+Date.now(), chip.dataset.full, true));
     else zone.appendChild(chip);
     checkStatus(); saveLayout();
@@ -288,10 +287,43 @@ function manualSave() {
     localStorage.setItem(DB+'_last_loc', JSON.stringify(current));
     const logs = JSON.parse(localStorage.getItem(DB+'_logs') || "[]");
     const d = new Date(); 
-    logs.unshift({ id: Date.now(), date: `${d.getMonth()+1}/${d.getDate()}(${["日","月","火","水","木","金","土"][d.getDay()]})`, detail: data.join(' / ') });
-    localStorage.setItem(DB+'_logs', JSON.stringify(logs.slice(0, 50)));
+    // 💡 月別フィルター用に年月データも保存
+    logs.unshift({ 
+        id: Date.now(), 
+        month: `${d.getFullYear()}年${d.getMonth()+1}月`,
+        date: `${d.getMonth()+1}/${d.getDate()}(${["日","月","火","水","木","金","土"][d.getDay()]})`, 
+        detail: data.join(' / ') 
+    });
+    localStorage.setItem(DB+'_logs', JSON.stringify(logs.slice(0, 300))); // 履歴保存数を増やしておく
     document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-    checkStatus(); saveLayout(); alert("保存しました");
+    checkStatus(); saveLayout(); alert("保存しました！「履歴」から確認できます。");
+}
+
+function renderHistory() {
+    const logs = JSON.parse(localStorage.getItem(DB+'_logs') || "[]");
+    const filterValue = document.getElementById('monthFilter').value;
+    const container = document.getElementById('historyContainer');
+    
+    // 月別プルダウンの更新（全履歴からユニークな月を取得）
+    const monthSelect = document.getElementById('monthFilter');
+    const currentMonths = [...new Set(logs.map(l => l.month))];
+    const savedFilter = monthSelect.value;
+    monthSelect.innerHTML = '<option value="all">すべて表示</option>' + currentMonths.map(m => `<option value="${m}">${m}</option>`).join('');
+    monthSelect.value = savedFilter;
+
+    // 💡 フィルタリング & 並び替え（古い順：idが小さい順）
+    let displayLogs = logs;
+    if (filterValue !== 'all') displayLogs = logs.filter(l => l.month === filterValue);
+    displayLogs.sort((a, b) => a.id - b.id);
+
+    container.innerHTML = displayLogs.map(l => `
+        <div class="history-item">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <b>📅 ${l.date}</b>
+                <button class="del-day-btn no-print staff-only" onclick="deleteDay(${l.id}, event)">削除</button>
+            </div>
+            <div class="history-content">${l.detail}</div>
+        </div>`).join('');
 }
 
 function deleteDay(id, e) {
@@ -302,39 +334,17 @@ function deleteDay(id, e) {
     renderHistory();
 }
 
-function renderHistory() {
-    const logs = JSON.parse(localStorage.getItem(DB+'_logs') || "[]");
-    document.getElementById('historyContainer').innerHTML = logs.map((l, i) => `
-        <div class="history-item ${i===0?'open':''}" style="position:relative; border-bottom:1px solid #eee; padding:15px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <b>📅 ${l.date}</b>
-                <button class="del-day-btn no-print staff-only" onclick="deleteDay(${l.id}, event)">削除</button>
-            </div>
-            <div class="history-content" style="margin-top:10px;">${l.detail}</div>
-        </div>`).join('');
-}
+function handleDragOver(e) { e.preventDefault(); const t = e.target.closest('.spot-row') || e.target.closest('.member-zone') || e.target.closest('.shuffle-zone'); if(t) t.classList.add('drag-over'); }
+function handleDragLeave(e) { const t = e.target.closest('.spot-row') || e.target.closest('.member-zone') || e.target.closest('.shuffle-zone'); if(t) t.classList.remove('drag-over'); }
+function handleDrop(e) { e.preventDefault(); const zone = e.target.closest('.drop-zone, .member-zone, .shuffle-zone'); document.querySelectorAll('.spot-row, .member-zone, .shuffle-zone').forEach(el => el.classList.remove('drag-over')); if (zone && draggedElement) handleMove(draggedElement, zone); }
 
-function handleDragOver(e) { 
-    e.preventDefault(); 
-    const target = e.target.closest('.spot-row') || e.target.closest('.member-zone') || e.target.closest('.shuffle-zone');
-    if (target) target.classList.add('drag-over');
-}
-function handleDragLeave(e) { 
-    const target = e.target.closest('.spot-row') || e.target.closest('.member-zone') || e.target.closest('.shuffle-zone');
-    if (target) target.classList.remove('drag-over');
-}
-function handleDrop(e) { 
-    e.preventDefault(); 
-    const zone = e.target.closest('.drop-zone, .member-zone, .shuffle-zone'); 
-    document.querySelectorAll('.spot-row, .member-zone, .shuffle-zone').forEach(el => el.classList.remove('drag-over'));
-    if (zone && draggedElement) handleMove(draggedElement, zone); 
-}
 function checkConstraint(full, spot) {
     if (full.includes('!') && spot.includes(full.split('!')[1].split(/[♢♦]/)[0].trim())) return false;
     if (spot.includes("女子トイレ") && full.includes('♢')) return false;
     if (spot.includes("男子トイレ") && full.includes('♦')) return false;
     return true;
 }
+
 function runShuffle() {
     const last = JSON.parse(localStorage.getItem(DB+'_last_loc') || "{}");
     const pool = document.getElementById('shufflePool'); const chips = Array.from(pool.children);
@@ -346,22 +356,26 @@ function runShuffle() {
     });
     checkStatus(); saveLayout();
 }
+
 function showPage(p) { 
     document.querySelectorAll('.page').forEach(pg => pg.classList.remove('active')); document.getElementById(p).classList.add('active');
     document.querySelectorAll('nav button').forEach(b => b.classList.remove('active-nav'));
     const btn = document.getElementById('btn-'+p.replace('Page','')); if(btn) btn.classList.add('active-nav');
     if(p==='historyPage') renderHistory();
 }
+
 function toggleStaffMode() {
     const lbl = document.getElementById('modeLabel');
     if (!isStaff) { 
         if (prompt("パスワード") === (localStorage.getItem(DB+'_staff_pw')||INITIAL_PW)) { 
             isStaff=true; document.body.classList.add('is-staff'); document.getElementById('staffNav').classList.add('staff-visible'); lbl.innerText = "🏠 利用者モードに戻る";
+            renderHistory(); // スタッフモードになったら履歴の削除ボタンを出すために再描画
         } 
     } else { 
         isStaff=false; document.body.classList.remove('is-staff'); document.getElementById('staffNav').classList.remove('staff-visible'); lbl.innerText = "🔒 スタッフモード"; showPage('mainPage'); 
     }
 }
+
 function saveSettings() {
     localStorage.setItem(DB+'_m', document.getElementById('memberInput').value);
     localStorage.setItem(DB+'_s', document.getElementById('spotInput').value);
@@ -370,25 +384,19 @@ function saveSettings() {
     localStorage.setItem(DB+'_entry_pw', document.getElementById('entry-pw-input').value);
     localStorage.removeItem(DB+'_layout'); location.reload();
 }
+
 function saveLayout() {
-    const chips = []; document.querySelectorAll('.user-chip').forEach(c => {
-        if (!c.id.startsWith('h-')) chips.push({id:c.id, full:c.dataset.full, zone:c.parentElement.id || c.parentElement.closest('.spot-row').dataset.rowId});
-    });
+    const chips = []; document.querySelectorAll('.user-chip').forEach(c => { if (!c.id.startsWith('h-')) chips.push({id:c.id, full:c.dataset.full, zone:c.parentElement.id || c.parentElement.closest('.spot-row').dataset.rowId}); });
     localStorage.setItem(DB+'_layout', JSON.stringify(chips));
 }
+
 function loadLayout() {
     const data = JSON.parse(localStorage.getItem(DB+'_layout') || "[]");
-    if (!data.length) { 
-        document.getElementById('memberInput').value.split('\n').filter(n=>n.trim()).forEach((n,i)=>document.getElementById('shufflePool').appendChild(createChip("u-"+i, n)));
-    } else {
-        data.forEach(d => {
-            const c = createChip(d.id, d.full);
-            const z = d.zone.includes('-') ? document.querySelector(`[data-row-id="${d.zone}"] .drop-zone`) : document.getElementById(d.zone);
-            if (z) z.appendChild(c);
-        });
-    }
+    if (!data.length) { document.getElementById('memberInput').value.split('\n').filter(n=>n.trim()).forEach((n,i)=>document.getElementById('shufflePool').appendChild(createChip("u-"+i, n))); }
+    else { data.forEach(d => { const c = createChip(d.id, d.full); const z = d.zone.includes('-') ? document.querySelector(`[data-row-id="${d.zone}"] .drop-zone`) : document.getElementById(d.zone); if (z) z.appendChild(c); }); }
     checkStatus();
 }
+
 function checkEntry() { if (document.getElementById('entry-pw').value === (localStorage.getItem(DB+'_entry_pw')||INITIAL_PW)) { localStorage.setItem(DB+'_logged','true'); location.reload(); } else alert("違うよ"); }
 function clearAllDels() { document.querySelectorAll('.user-chip').forEach(c => c.classList.remove('show-del')); }
 function resetToShufflePool() { if(confirm("全員戻しますか？")){ document.querySelectorAll('.drop-zone .user-chip').forEach(c => { if(c.dataset.isHelper==="true") c.remove(); else document.getElementById('shufflePool').appendChild(c); }); checkStatus(); saveLayout(); } }
