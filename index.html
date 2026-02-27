@@ -38,7 +38,7 @@
         .spot-header { display: flex; align-items: center; width: 100%; margin-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
         .spot-info { font-weight: bold; color: var(--deep-blue); font-size: 18px; }
         
-        .drag-over { background-color: var(--hover-blue) !important; border-color: var(--primary-blue) !important; }
+        .drag-over { background-color: var(--hover-blue) !important; border: 3px solid var(--primary-blue) !important; box-shadow: inset 0 0 10px rgba(2,136,209,0.2); }
         .drop-zone { width: 100%; flex-grow: 1; min-height: 70px; display: flex; flex-wrap: wrap; gap: 8px; background: #fdfdfd; padding: 8px; border-radius: 10px; }
         
         .member-zone, .shuffle-zone { background:#fafafa; padding:18px; border:3px dashed #cfd8dc; border-radius:18px; min-height:100px; display:flex; flex-wrap:wrap; gap:12px; margin-bottom: 20px; transition: background 0.3s; }
@@ -46,10 +46,8 @@
         
         .user-chip { position: relative; padding: 14px 24px; background: white; border: 2px solid #b3e5fc; border-radius: 40px; font-weight: bold; font-size: 20px; color: #0277bd; cursor: grab; box-shadow: 0 4px 8px rgba(0,0,0,0.12); z-index: 100; touch-action: none; transition: transform 0.1s, opacity 0.1s; }
         
-        /* ドラッグ中のチップ用スタイル */
-        .user-chip.dragging { position: fixed !important; opacity: 0.7; z-index: 3000; pointer-events: none; transform: scale(1.1); box-shadow: 0 8px 16px rgba(0,0,0,0.2); }
+        .user-chip.dragging { position: fixed !important; opacity: 0.8; z-index: 3000; pointer-events: none !important; transform: scale(1.05); box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
 
-        /* 💡 iPadでも押しやすいように修正 */
         .del-btn { position: absolute; top: -18px; right: -18px; background: var(--accent-red); color: white; border: 3px solid white; border-radius: 50%; width: 44px; height: 44px; font-weight: bold; display: none; z-index: 200; cursor: pointer; font-size: 24px; line-height: 38px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
         .user-chip.show-del .del-btn { display: block; }
 
@@ -167,11 +165,8 @@ function createChip(id, fullName, isHelper = false) {
     chip.innerText = fullName.split(/[!♢♦]/)[0]; chip.dataset.full = fullName; chip.dataset.isHelper = isHelper;
     chip.draggable = true;
     
-    chip.ondragstart = (e) => { draggedElement = chip; };
-    
-    // 💡 iPad・タッチ操作
+    // iPad・タッチ操作
     chip.addEventListener('touchstart', (e) => { 
-        if (!isStaff) return; // スタッフモード以外は何もしない
         draggedElement = chip; 
         const touch = e.touches[0];
         const rect = chip.getBoundingClientRect();
@@ -179,7 +174,6 @@ function createChip(id, fullName, isHelper = false) {
         offset.y = touch.clientY - rect.top;
         startPos.x = touch.clientX;
         startPos.y = touch.clientY;
-        // 最初はdraggingを付けない（タップ判定を残すため）
     }, {passive: false});
 
     chip.addEventListener('touchmove', (e) => {
@@ -187,10 +181,10 @@ function createChip(id, fullName, isHelper = false) {
         const touch = e.touches[0];
         const x = touch.clientX; const y = touch.clientY;
 
-        // 💡 10px以上動いたら初めてドラッグとみなす
-        if (!chip.classList.contains('dragging') && (Math.abs(x - startPos.x) > 10 || Math.abs(y - startPos.y) > 10)) {
+        // 💡 5px以上動いたらドラッグ開始（判定を少し敏感に）
+        if (!chip.classList.contains('dragging') && (Math.abs(x - startPos.x) > 5 || Math.abs(y - startPos.y) > 5)) {
             chip.classList.add('dragging');
-            clearAllDels(); // ドラッグ開始したら×ボタンを消す
+            clearAllDels();
         }
 
         if (chip.classList.contains('dragging')) {
@@ -198,13 +192,18 @@ function createChip(id, fullName, isHelper = false) {
             chip.style.left = (x - offset.x) + 'px';
             chip.style.top = (y - offset.y) + 'px';
 
+            // 💡 判定を「指の位置」にして、枠に入りやすくする
             const zone = document.elementFromPoint(x, y)?.closest('.drop-zone, .member-zone, .shuffle-zone');
+            
             clearInterval(scrollInterval);
-            if (y < 80) scrollInterval = setInterval(() => window.scrollBy(0, -10), 20);
-            else if (y > window.innerHeight - 80) scrollInterval = setInterval(() => window.scrollBy(0, 10), 20);
+            if (y < 80) scrollInterval = setInterval(() => window.scrollBy(0, -15), 20);
+            else if (y > window.innerHeight - 80) scrollInterval = setInterval(() => window.scrollBy(0, 15), 20);
 
             document.querySelectorAll('.spot-row, .member-zone, .shuffle-zone').forEach(el => el.classList.remove('drag-over'));
-            if (zone) (zone.closest('.spot-row') || zone).classList.add('drag-over');
+            if (zone) {
+                const target = zone.closest('.spot-row') || zone;
+                target.classList.add('drag-over');
+            }
         }
     }, {passive: false});
 
@@ -221,30 +220,24 @@ function createChip(id, fullName, isHelper = false) {
             document.querySelectorAll('.spot-row, .member-zone, .shuffle-zone').forEach(el => el.classList.remove('drag-over'));
             if (zone) handleMove(draggedElement, zone); 
         } else {
-            // 動かさずに離した＝タップ（スタッフモード時のみ×を表示）
-            if (isStaff) {
-                e.preventDefault();
-                const wasShowing = chip.classList.contains('show-del');
-                clearAllDels();
-                if (!wasShowing) chip.classList.add('show-del');
-            }
-        }
-        draggedElement = null;
-    });
-
-    // PC用クリック
-    chip.onclick = (e) => { 
-        if (isStaff) {
-            e.stopPropagation(); 
+            // タップ操作：利用者モードでも×を表示
+            e.preventDefault();
             const wasShowing = chip.classList.contains('show-del');
             clearAllDels();
             if (!wasShowing) chip.classList.add('show-del');
         }
+        draggedElement = null;
+    });
+
+    // PC用
+    chip.onclick = (e) => { 
+        e.stopPropagation(); 
+        const wasShowing = chip.classList.contains('show-del');
+        clearAllDels();
+        if (!wasShowing) chip.classList.add('show-del');
     };
 
     const del = document.createElement('button'); del.className = "del-btn"; del.innerText = "×";
-    
-    // 💡 iPadで確実に反応させるための処理
     const deleteAction = (e) => {
         e.stopPropagation();
         e.preventDefault();
